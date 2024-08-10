@@ -15,7 +15,7 @@
         "lint": "npx eslint . --config eslint.config.mjs",
         "generate": "npx prisma generate --schema ./src/prisma/schema.prisma",
         "validate": "npx prisma validate --schema ./src/prisma/schema.prisma",
-        "format": "npx prisma format --schema ./src/prisma/schema.prisma"
+        "db-format": "npx prisma format --schema ./src/prisma/schema.prisma"
     },
     "keywords": [
         "electronic-device-store",
