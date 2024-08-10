@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AttributeOption {
+  optionID         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  optionValue      String
+  typeID           String             @db.Uuid
+  AttributeType    AttributeType      @relation(fields: [typeID], references: [typeID], onDelete: NoAction, onUpdate: NoAction, map: "AttributeOption_typeID_AttributeType_typeID_fk")
+  productAttributes ProductAttribute[]   
+}
+
+model AttributeType {
+  typeID          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  typeValue       String
+  attributeOptions AttributeOption[]
+}
+
+model Category {
+  categoryID   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryName String    @db.VarChar(255)
+  products     Product[]
+}
+
+model Invoice {
+  invoiceID      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status         invoiceStatus
+  payment        paymentMethod
+  city           String
+  ward           String
+  province       String
+  phoneNumber    String
+  detailAddress  String
+  userID         String           @db.Uuid
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  User           User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
+  invoiceProducts InvoiceProduct[]
+}
+
+model InvoiceProduct {
+  discount    Float?  @db.Real
+  price       Float   @db.Real
+  productName String
+  quantity    Int     @db.SmallInt
+  invoiceID   String  @db.Uuid
+  productID   String  @db.Uuid
+  productCode String
+  color       String
+  storage     String?
+  Invoice     Invoice @relation(fields: [invoiceID], references: [invoiceID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_invoiceID _Invoice_invoiceID_fk")
+  Product     Product @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_productID_Product_productID_fk")
+
+  @@unique([invoiceID, productID], map: "invoice_product_unique")
+}
+
+model ItemImage {
+  imageID     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source      String
+  itemID      String      @db.Uuid
+  ProductItem ProductItem @relation(fields: [itemID], references: [itemID], onDelete: NoAction, onUpdate: NoAction, map: "ItemImage_itemID_ProductItem_itemID_fk")
+}
+
+model Product {
+  productID        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productName      String             @db.VarChar(255)
+  description      String?
+  length           Float              @db.Real
+  width            Float              @db.Real
+  height           Float              @db.Real
+  weight           Float              @db.Real
+  warranty         Float              @db.Real
+  categoryID       String?            @db.Uuid
+  providerID       String?            @db.Uuid
+  invoiceProducts   InvoiceProduct[]
+  Category         Category?          @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
+  Provider         Provider?          @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
+  productAttributes ProductAttribute[]
+  productItems      ProductItem[]
+  review           Review[]
+}
+
+model ProductAttribute {
+  productID       String          @db.Uuid
+  optionID        String          @db.Uuid
+  AttributeOption AttributeOption @relation(fields: [optionID], references: [optionID], onDelete: NoAction, onUpdate: NoAction, map: "ProductAttribute_optionID_AttributeOption_optionID_fk")
+  Product         Product         @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductAttribute_productID_Product_productID_fk")
+
+  @@unique([productID, optionID], map: "product_attribute_unique")
+}
+
+model ProductItem {
+  itemID      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  thump       String
+  quantity    Int         @db.SmallInt
+  price       Float       @db.Real
+  productCode String
+  discount    Float?      @default(0) @db.Real
+  color       String
+  storage     String?
+  productID   String?     @db.Uuid
+  itemImages   ItemImage[]
+  Product     Product?    @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
+}
+
+model Provider {
+  providerID   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerName String    @db.VarChar(255)
+  products      Product[]
+}
+
+model Review {
+  reviewID      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewContent String
+  rating        Int?    @default(5) @db.SmallInt
+  productID     String  @db.Uuid
+  userID        String  @db.Uuid
+  Product       Product @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "Review_productID_Product_productID_fk")
+  User          User    @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Review_userID_User_userID_fk")
+}
+
+model SlideShow {
+  slideID String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  url     String
+  alt     String
+  storeID String @db.Uuid
+  Store   Store  @relation(fields: [storeID], references: [storeID], onDelete: NoAction, onUpdate: NoAction, map: "SlideShow_storeID_Store_storeID_fk")
+}
+
+model Store {
+  storeID     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  storeName   String      @db.VarChar(255)
+  description String?
+  address     String?
+  phoneNumber String?     @db.VarChar(10)
+  email       String?     @db.VarChar(255)
+  bannerUrls  String[]
+  slideShows   SlideShow[]
+}
+
+model User {
+  userID           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userName         String    @db.VarChar(255)
+  email            String    @unique(map: "User_email_unique") @db.VarChar(255)
+  password         String    @db.VarChar(255)
+  phoneNumber      String?   @db.VarChar(10)
+  avatar           String?
+  isBanned         Boolean   @default(false)
+  role             userRoles @default(CLIENT)
+  refreshTokensUsed String[] @map("refreshTokenUsed")
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  updateAt         DateTime  @default(now()) @db.Timestamptz(6)
+  invoices          Invoice[]
+  review           Review[]
+}
+
+enum invoiceStatus {
+  NEW
+  SHIPPING
+  DONE
+  ABORT
+}
+
+enum paymentMethod {
+  COD
+  BANKING
+}
+
+enum userRoles {
+  ADMIN
+  CLIENT
+}
