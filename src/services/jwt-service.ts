@@ -20,7 +20,7 @@ const generateToken = (
             algorithm: "HS256",
             expiresIn: ms(tokenLife),
         });
-    } catch (error) {
+    } catch {
         return null;
     }
 };

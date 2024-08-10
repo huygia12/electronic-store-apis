@@ -1,10 +1,6 @@
 import {RequestMethod, ResponseMessage} from "./constants";
 import zod, {ZodSchema, z} from "zod";
 
-const uniqueArray = <T>(array: T[]) => {
-    return new Set(array).size === array.length;
-};
-
 const attributeTypeSchema = zod
     .object({
         typeValue: zod

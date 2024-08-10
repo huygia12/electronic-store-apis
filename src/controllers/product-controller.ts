@@ -1,4 +1,4 @@
-import {Request, Response, NextFunction} from "express";
+import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 import productService from "../services/product-service";
 import {ProductFullJoin} from "@/common/types";
@@ -59,11 +59,13 @@ const getProducts = async (req: Request, res: Response) => {
 
     let payload = null;
     if (categoryID) {
-        payload =
-            await productService.getProductsFullJoinWithCategoryID(categoryID);
+        payload = await productService.getProductsFullJoinWithCategoryID(
+            categoryID
+        );
     } else if (providerID) {
-        payload =
-            await productService.getProductsFullJoinWithProviderID(providerID);
+        payload = await productService.getProductsFullJoinWithProviderID(
+            providerID
+        );
     } else if (detail) {
         payload = await productService.getProductsFullJoin();
     } else {

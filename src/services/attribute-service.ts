@@ -219,7 +219,7 @@ const deleteAttributeOption = async (optionID: string, typeID: string) => {
     const attributeOptionHolder: Nullable<AttributeOption> =
         await getAttributeOptionByID(optionID);
 
-    if (!attributeOptionHolder) {
+    if (!attributeOptionHolder || attributeOptionHolder.typeID !== typeID) {
         console.debug(
             `[attribute service]: Attribute option: ${optionID} not found`
         );
