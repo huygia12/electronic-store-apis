@@ -65,6 +65,12 @@ setup husky:
 npm run prepare
 ```
 
+you can check the invalid code with this command:
+
+```shell
+npm run lint
+```
+
 you can run the development server by this command:
 
 ```shell

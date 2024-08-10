@@ -1,4 +1,4 @@
-import {Request, Response, NextFunction} from "express";
+import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 import jwtService from "../services/jwt-service";
 import userService from "../services/user-service";
@@ -26,7 +26,7 @@ import MissingTokenError from "@/errors/auth/missing-token";
  * @param {Response} res
  * @param {NextFunction} next
  */
-const signup = async (req: Request, res: Response, next: NextFunction) => {
+const signup = async (req: Request, res: Response) => {
     const userSignupReq: SignupRequest = req.body;
 
     await userService.insertUser(userSignupReq);
@@ -48,7 +48,7 @@ const signup = async (req: Request, res: Response, next: NextFunction) => {
  * @param {Response} res
  * @param {NextFunction} next
  */
-const login = async (req: Request, res: Response, next: NextFunction) => {
+const login = async (req: Request, res: Response) => {
     const loginReq: LoginRequest = req.body;
 
     //If both token are verified and refresh token is stored in DB, then will not create new token
