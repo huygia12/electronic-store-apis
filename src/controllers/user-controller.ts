@@ -53,23 +53,22 @@ const login = async (req: Request, res: Response) => {
 
     //If both token are verified and refresh token is stored in DB, then will not create new token
     try {
-        const accessTokenFromCookie: string = req.cookies.accessToken;
+        const accessToken: Optional<string | string[]> =
+            req.headers["authorization"];
         const refreshTokenFromCookie: string = req.cookies.refreshToken;
 
-        console.debug(
-            `[user controller]: Login: refreshToken=${refreshTokenFromCookie} and \n accessToken=${accessTokenFromCookie}`
-        );
+        if (typeof accessToken !== "string") {
+            console.debug(
+                `[login controller]: getToken in header failure: ${accessToken}`
+            );
+            throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
+        }
         // Get userID from accesstoken payload
         const userDecoded = jwtService.verifyAuthToken(
-            accessTokenFromCookie,
+            accessToken.replace("Bearer ", ""),
             AuthToken.AC
         ) as UserInTokenPayload;
 
-        console.debug(
-            `[user controller]: Login: userDecoded=${JSON.stringify(
-                userDecoded
-            )}`
-        );
         // Query user
         const userDTO: Nullable<UserDTO> = await userService.getUserDTOByID(
             userDecoded.userID
@@ -122,10 +121,13 @@ const login = async (req: Request, res: Response) => {
     }
 
     console.debug(`[user controller]: Login: starting login process...`);
-    await userService.login(res, loginReq);
+    const accessToken: string = await userService.login(res, loginReq);
 
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
+        info: {
+            accessToken: accessToken,
+        },
     });
 };
 
@@ -150,7 +152,7 @@ const logout = async (req: Request, res: Response) => {
     }
 
     console.debug(`[user controller]: Logout successfull`);
-    res.clearCookie(AuthToken.AC);
+    res.removeHeader("Authorization");
     res.clearCookie(AuthToken.RF);
     res.status(StatusCodes.OK).json({message: ResponseMessage.SUCCESS});
 };
@@ -194,9 +196,15 @@ const refreshToken = async (req: Request, res: Response) => {
         }
 
         //Down here token must be valid
-        await userService.refreshToken(res, userDecoded.userID);
+        const accessToken: string = await userService.refreshToken(
+            res,
+            userDecoded.userID
+        );
         res.status(StatusCodes.OK).json({
-            message: "Update succeed",
+            message: ResponseMessage.SUCCESS,
+            info: {
+                accessToken: accessToken,
+            },
         });
     } catch {
         console.debug(
@@ -224,7 +232,7 @@ const updateInfo = async (req: Request, res: Response) => {
 
     console.debug(`[user controller] update user successfull`);
     res.status(StatusCodes.OK).json({
-        message: "Update succeed",
+        message: ResponseMessage.SUCCESS,
         infor: updatedUser,
     });
 };

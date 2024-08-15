@@ -234,12 +234,7 @@ const deleteProduct = async (productID: string) => {
 };
 
 const getProductsSummary = async (): Promise<Product[]> => {
-    const products: Product[] = await prisma.product.findMany();
-    return products;
-};
-
-const getProductsFullJoin = async (): Promise<ProductFullJoin[]> => {
-    const products: ProductFullJoin[] = await prisma.product.findMany({
+    const products: Product[] = await prisma.product.findMany({
         select: {
             productID: true,
             productName: true,
@@ -249,100 +244,10 @@ const getProductsFullJoin = async (): Promise<ProductFullJoin[]> => {
             height: true,
             weight: true,
             warranty: true,
+            category: true,
+            provider: true,
             categoryID: true,
             providerID: true,
-            productAttributes: true,
-            productItems: {
-                select: {
-                    itemID: true,
-                    thump: true,
-                    quantity: true,
-                    price: true,
-                    productCode: true,
-                    discount: true,
-                    color: true,
-                    storage: true,
-                },
-                include: {
-                    itemImages: true,
-                },
-            },
-        },
-    });
-    return products;
-};
-
-const getProductsFullJoinWithCategoryID = async (
-    categoryID: string
-): Promise<ProductFullJoin[]> => {
-    const products: ProductFullJoin[] = await prisma.product.findMany({
-        where: {
-            categoryID: categoryID,
-        },
-        select: {
-            productID: true,
-            productName: true,
-            description: true,
-            length: true,
-            width: true,
-            height: true,
-            weight: true,
-            warranty: true,
-            categoryID: true,
-            providerID: true,
-            productAttributes: true,
-            productItems: {
-                select: {
-                    itemID: true,
-                    thump: true,
-                    quantity: true,
-                    price: true,
-                    productCode: true,
-                    discount: true,
-                    color: true,
-                    storage: true,
-                    productID: true,
-                    itemImages: true,
-                },
-            },
-        },
-    });
-    return products;
-};
-
-const getProductsFullJoinWithProviderID = async (
-    providerID: string
-): Promise<ProductFullJoin[]> => {
-    const products: ProductFullJoin[] = await prisma.product.findMany({
-        where: {
-            providerID: providerID,
-        },
-        select: {
-            productID: true,
-            productName: true,
-            description: true,
-            length: true,
-            width: true,
-            height: true,
-            weight: true,
-            warranty: true,
-            categoryID: true,
-            providerID: true,
-            productAttributes: true,
-            productItems: {
-                select: {
-                    itemID: true,
-                    thump: true,
-                    quantity: true,
-                    price: true,
-                    productCode: true,
-                    discount: true,
-                    color: true,
-                    storage: true,
-                    productID: true,
-                    itemImages: true,
-                },
-            },
         },
     });
     return products;
@@ -351,7 +256,7 @@ const getProductsFullJoinWithProviderID = async (
 const getProductFullJoinWithID = async (
     productID: string
 ): Promise<ProductFullJoin> => {
-    const product: Nullable<ProductFullJoin> = await prisma.product.findUnique({
+    const product: Nullable<ProductFullJoin> = await prisma.product.findFirst({
         where: {
             productID: productID,
         },
@@ -364,11 +269,30 @@ const getProductFullJoinWithID = async (
             height: true,
             weight: true,
             warranty: true,
+            category: true,
+            provider: true,
             categoryID: true,
             providerID: true,
-            productAttributes: true,
+            productAttributes: {
+                select: {
+                    attributeOption: {
+                        select: {
+                            typeID: true,
+                            optionID: true,
+                            optionValue: true,
+                            attributeType: {
+                                select: {
+                                    typeID: true,
+                                    typeValue: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
             productItems: {
                 select: {
+                    productID: true,
                     itemID: true,
                     thump: true,
                     quantity: true,
@@ -377,8 +301,13 @@ const getProductFullJoinWithID = async (
                     discount: true,
                     color: true,
                     storage: true,
-                    productID: true,
-                    itemImages: true,
+                    itemImages: {
+                        select: {
+                            imageID: true,
+                            itemID: true,
+                            source: true,
+                        },
+                    },
                 },
             },
         },
@@ -394,13 +323,80 @@ const getProductFullJoinWithID = async (
     return product;
 };
 
+const getProductsFullJoinAfterFilter = async (
+    categoryID?: string,
+    providerID?: string,
+    quantity: number = 10
+): Promise<ProductFullJoin[]> => {
+    const products: Nullable<ProductFullJoin[]> = await prisma.product.findMany(
+        {
+            where: {
+                categoryID: categoryID,
+                providerID: providerID,
+            },
+            take: quantity,
+            select: {
+                productID: true,
+                productName: true,
+                description: true,
+                length: true,
+                width: true,
+                height: true,
+                weight: true,
+                warranty: true,
+                category: true,
+                provider: true,
+                categoryID: true,
+                providerID: true,
+                productAttributes: {
+                    select: {
+                        attributeOption: {
+                            select: {
+                                typeID: true,
+                                optionID: true,
+                                optionValue: true,
+                                attributeType: {
+                                    select: {
+                                        typeID: true,
+                                        typeValue: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                productItems: {
+                    select: {
+                        productID: true,
+                        itemID: true,
+                        thump: true,
+                        quantity: true,
+                        price: true,
+                        productCode: true,
+                        discount: true,
+                        color: true,
+                        storage: true,
+                        itemImages: {
+                            select: {
+                                imageID: true,
+                                itemID: true,
+                                source: true,
+                            },
+                        },
+                    },
+                },
+            },
+        }
+    );
+
+    return products;
+};
+
 export default {
     createProduct,
     updateProduct,
     deleteProduct,
     getProductsSummary,
-    getProductsFullJoinWithCategoryID,
-    getProductsFullJoinWithProviderID,
-    getProductsFullJoin,
     getProductFullJoinWithID,
+    getProductsFullJoinAfterFilter,
 };

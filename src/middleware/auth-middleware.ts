@@ -7,20 +7,24 @@ import InvalidTokenError from "@/errors/auth/invalid-token";
 import AccessDenided from "@/errors/auth/access-denied";
 
 const isAuthorized = (req: Request, res: Response, next: NextFunction) => {
-    const accessTokenFromCookie: Optional<string> = req.cookies?.accessToken;
+    const accessToken: Optional<string | string[]> =
+        req.headers["authorization"];
 
-    if (!accessTokenFromCookie) {
+    if (typeof accessToken !== "string") {
         console.debug(
-            `[auth-middleware] Check token's authorization failure : missing token`
+            `[auth-middleware] Check request from admin failure: missing token`
         );
         throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
     }
 
     try {
-        jwtService.verifyAuthToken(accessTokenFromCookie, AuthToken.AC);
+        jwtService.verifyAuthToken(
+            accessToken.replace("Bearer ", ""),
+            AuthToken.AC
+        );
     } catch {
         console.debug(
-            `[auth-middleware] Check token's authorization failure: invalid token`
+            `[auth-middleware]: Check token's authorization has been failed: invalid token`
         );
         throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
     }
@@ -30,22 +34,23 @@ const isAuthorized = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
-    const accessTokenFromCookie: Optional<string> = req.cookies?.accessToken;
+    const accessToken: Optional<string | string[]> =
+        req.headers["authorization"];
 
-    if (!accessTokenFromCookie) {
+    if (typeof accessToken !== "string") {
         console.debug(
-            `[auth-middleware] Check request from admin failure: missing token`
+            `[auth-middleware]: Check request from admin has been failed: missing token`
         );
         throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
     }
 
-    const user = (await jwtService.decodeToken(
-        accessTokenFromCookie
-    )) as UserInTokenPayload;
+    const user = jwtService.decodeToken(
+        accessToken.replace("Bearer ", "")
+    ) as UserInTokenPayload;
 
     if (user.role !== UserRole.ADMIN) {
         console.debug(
-            `[auth-middleware] Check request from admin failure: access denied`
+            `[auth-middleware] Check request from admin has been failed: access denied`
         );
         throw new AccessDenided(ResponseMessage.ACCESS_DENIED);
     }

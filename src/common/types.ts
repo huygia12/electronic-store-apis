@@ -7,6 +7,7 @@ import {
     ProductAttribute,
     ProductItem,
     Provider,
+    Review,
     userRoles,
 } from "@prisma/client";
 
@@ -22,10 +23,16 @@ type CategoryType = Category & {
     productQuantity: number;
 };
 
+type AttributeOptionType = AttributeOption & {attributeType: AttributeType};
+
+type ProductAttributeType = {
+    attributeOption: AttributeOptionType;
+};
+
 type ProductItemType = ProductItem & {itemImages: ItemImage[]};
 
 type ProductFullJoin = Product & {
-    productAttributes: ProductAttribute[];
+    productAttributes: ProductAttributeType[];
     productItems: ProductItemType[];
 };
 

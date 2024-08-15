@@ -121,7 +121,10 @@ const getUserDTOByID = async (userID: string): Promise<UserDTO> => {
     return user;
 };
 
-const login = async (res: Response, validPayload: LoginRequest) => {
+const login = async (
+    res: Response,
+    validPayload: LoginRequest
+): Promise<string> => {
     const validUser: UserDTO = await getValidUserDTO(
         validPayload.email,
         validPayload.password
@@ -150,13 +153,6 @@ const login = async (res: Response, validPayload: LoginRequest) => {
         throw new Error(ResponseMessage.GENERATE_TOKEN_ERROR);
 
     //set two token to cookie
-    res.cookie(AuthToken.AC, accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(jwtService.ACCESS_TOKEN_LIFE_SPAN),
-    });
-
     res.cookie(AuthToken.RF, refreshToken, {
         httpOnly: true,
         secure: true,
@@ -166,9 +162,10 @@ const login = async (res: Response, validPayload: LoginRequest) => {
 
     //Push refresh token to DB
     await pushRefreshToken(refreshToken, validUser.userID);
+    return accessToken;
 };
 
-const refreshToken = async (res: Response, userID: string) => {
+const refreshToken = async (res: Response, userID: string): Promise<string> => {
     const userDTO: UserDTO = await getUserDTOByID(userID);
 
     const userInPayLoad: UserInTokenPayload = {
@@ -194,13 +191,6 @@ const refreshToken = async (res: Response, userID: string) => {
         throw new Error(ResponseMessage.GENERATE_TOKEN_ERROR);
 
     //set two token to cookie
-    res.cookie(AuthToken.AC, accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(jwtService.ACCESS_TOKEN_LIFE_SPAN),
-    });
-
     res.cookie(AuthToken.RF, refreshToken, {
         httpOnly: true,
         secure: true,
@@ -209,6 +199,7 @@ const refreshToken = async (res: Response, userID: string) => {
     });
     //Push refresh token to DB
     await pushRefreshToken(refreshToken, userID);
+    return accessToken;
 };
 
 const insertUser = async (validPayload: SignupRequest) => {

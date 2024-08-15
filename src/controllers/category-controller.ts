@@ -4,6 +4,7 @@ import {StatusCodes} from "http-status-codes";
 import {ResponseMessage} from "@/common/constants";
 import {CategoryRequest} from "@/common/schemas";
 import {Category} from "@prisma/client";
+import {CategoryType} from "@/common/types";
 
 const createCategory = async (req: Request, res: Response) => {
     const newCategory: CategoryRequest = req.body;
@@ -43,7 +44,7 @@ const deleteCategory = async (req: Request, res: Response) => {
 };
 
 const getCategories = async (req: Request, res: Response) => {
-    const categorys: Category[] = await categoryService.getCategories();
+    const categorys: CategoryType[] = await categoryService.getCategories();
 
     console.debug(`[category controller]: Get categorys successfull`);
     return res.status(StatusCodes.OK).json({

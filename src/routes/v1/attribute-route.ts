@@ -5,23 +5,24 @@ import schemaValidator from "@/middleware/schema-validator";
 
 const router = express.Router();
 
-router.use(authMiddleware.isAuthorized);
-
 router.get("/", attributeController.getAttributes);
 router.post(
     "/",
+    authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
     schemaValidator("/attributes"),
     attributeController.createAttributeType
 );
 router.put(
     "/:typeID",
+    authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
     schemaValidator("/attributes/:typeID"),
     attributeController.updateAttributeType
 );
 router.delete(
     "/:typeID",
+    authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
     attributeController.deleteAttributeType
 );
@@ -29,18 +30,21 @@ router.delete(
 // Options
 router.post(
     "/:typeID/options",
+    authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
     schemaValidator("/attributes/:typeID/options"),
     attributeController.createAttributeOption
 );
 router.put(
     "/:typeID/options/:optionID",
+    authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
     schemaValidator("/attributes/:typeID/options/:optionID"),
     attributeController.updateAttributeOption
 );
 router.delete(
     "/:typeID/options/:optionID",
+    authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
     attributeController.deleteAttributeOption
 );

@@ -13,8 +13,8 @@
         "start": "node dist/index.js",
         "dev": "nodemon",
         "lint": "npx eslint ./src --config eslint.config.mjs",
-        "generate": "npx prisma generate --schema ./src/prisma/schema.prisma",
-        "validate": "npx prisma validate --schema ./src/prisma/schema.prisma",
+        "db-generate": "npx prisma generate --schema ./src/prisma/schema.prisma",
+        "db-validate": "npx prisma validate --schema ./src/prisma/schema.prisma",
         "db-format": "npx prisma format --schema ./src/prisma/schema.prisma"
     },
     "keywords": [

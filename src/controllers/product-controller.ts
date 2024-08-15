@@ -55,21 +55,16 @@ const getProduct = async (req: Request, res: Response) => {
 const getProducts = async (req: Request, res: Response) => {
     const categoryID = req.query.categoryID as string;
     const providerID = req.query.providerID as string;
-    const detail = req.query.detail as string;
+    const detail = Boolean(req.query.detail);
 
     let payload = null;
-    if (categoryID) {
-        payload = await productService.getProductsFullJoinWithCategoryID(
-            categoryID
-        );
-    } else if (providerID) {
-        payload = await productService.getProductsFullJoinWithProviderID(
+    if (detail) {
+        payload = await productService.getProductsSummary();
+    } else {
+        payload = await productService.getProductsFullJoinAfterFilter(
+            categoryID,
             providerID
         );
-    } else if (detail) {
-        payload = await productService.getProductsFullJoin();
-    } else {
-        payload = await productService.getProductsSummary();
     }
     console.debug(`[product controller]: get products successfull`);
     res.status(StatusCodes.OK).json({

@@ -4,6 +4,7 @@ import {StatusCodes} from "http-status-codes";
 import {ResponseMessage} from "@/common/constants";
 import {Provider} from "@prisma/client";
 import {ProviderRequest} from "@/common/schemas";
+import {ProviderType} from "@/common/types";
 
 const createProvider = async (req: Request, res: Response) => {
     const newProvider: ProviderRequest = req.body;
@@ -43,7 +44,7 @@ const deleteProvider = async (req: Request, res: Response) => {
 };
 
 const getProviders = async (req: Request, res: Response) => {
-    const providers: Provider[] = await providerService.getProviders();
+    const providers: ProviderType[] = await providerService.getProviders();
 
     console.debug(`[provider controller]: Get providers successfull`);
     return res.status(StatusCodes.OK).json({

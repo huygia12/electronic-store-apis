@@ -11,7 +11,7 @@ model AttributeOption {
   optionID         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   optionValue      String
   typeID           String             @db.Uuid
-  AttributeType    AttributeType      @relation(fields: [typeID], references: [typeID], onDelete: NoAction, onUpdate: NoAction, map: "AttributeOption_typeID_AttributeType_typeID_fk")
+  attributeType    AttributeType      @relation(fields: [typeID], references: [typeID], onDelete: NoAction, onUpdate: NoAction, map: "AttributeOption_typeID_AttributeType_typeID_fk")
   productAttributes ProductAttribute[]   
 }
 
@@ -77,17 +77,17 @@ model Product {
   categoryID       String?            @db.Uuid
   providerID       String?            @db.Uuid
   invoiceProducts   InvoiceProduct[]
-  Category         Category?          @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
-  Provider         Provider?          @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
+  category         Category?          @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
+  provider         Provider?          @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
   productAttributes ProductAttribute[]
   productItems      ProductItem[]
-  review           Review[]
+  reviews           Review[]
 }
 
 model ProductAttribute {
   productID       String          @db.Uuid
   optionID        String          @db.Uuid
-  AttributeOption AttributeOption @relation(fields: [optionID], references: [optionID], onDelete: NoAction, onUpdate: NoAction, map: "ProductAttribute_optionID_AttributeOption_optionID_fk")
+  attributeOption AttributeOption @relation(fields: [optionID], references: [optionID], onDelete: NoAction, onUpdate: NoAction, map: "ProductAttribute_optionID_AttributeOption_optionID_fk")
   Product         Product         @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductAttribute_productID_Product_productID_fk")
 
   @@unique([productID, optionID], map: "product_attribute_unique")

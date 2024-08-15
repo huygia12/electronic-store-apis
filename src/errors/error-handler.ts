@@ -1,11 +1,12 @@
-import {ErrorRequestHandler, Request, Response} from "express";
+import {ResponsableError} from "@/errors/custom-error";
+import {ErrorRequestHandler, NextFunction, Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
-import {ResponsableError} from "./custom-error";
 
 const errorHandler: ErrorRequestHandler = (
     error: Error,
     req: Request,
-    res: Response
+    res: Response,
+    next: NextFunction
 ) => {
     console.debug(`[error handler] ${error.name} : ${error.stack}`);
 
