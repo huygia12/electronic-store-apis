@@ -1,13 +1,11 @@
-import {
+import type {
     AttributeOption,
     AttributeType,
     Category,
     ItemImage,
     Product,
-    ProductAttribute,
     ProductItem,
     Provider,
-    Review,
     userRoles,
 } from "@prisma/client";
 
@@ -69,6 +67,25 @@ interface UserInTokenPayload {
     role: userRoles;
 }
 
+interface ZaloPaymentOrder {
+    app_id: number;
+    app_trans_id: string;
+    app_user: string;
+    app_time: number; // miliseconds
+    item: string; // Json array
+    embed_data: string; // Json string
+    amount: number;
+    description: string;
+    bank_code: string;
+    mac: string;
+    callback_url: string;
+}
+
+interface ZaloPaymentResult {
+    return_code: number;
+    return_message: string;
+}
+
 export type {
     Nullable,
     Optional,
@@ -79,4 +96,6 @@ export type {
     UserInTokenPayload,
     UserResponseDTO,
     ProductFullJoin,
+    ZaloPaymentOrder,
+    ZaloPaymentResult,
 };

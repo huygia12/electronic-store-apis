@@ -3,7 +3,7 @@ import prisma from "@/common/prisma-client";
 import {ProductItemRequest, ProductRequest} from "@/common/schemas";
 import {Nullable, ProductFullJoin} from "@/common/types";
 import ProductNotFoundError from "@/errors/product/product-not-found";
-import {Product} from "@prisma/client";
+import type {Product} from "@prisma/client";
 import providerService from "./provider-service";
 import categoryService from "./category-service";
 import attributeService from "./attribute-service";
@@ -234,22 +234,7 @@ const deleteProduct = async (productID: string) => {
 };
 
 const getProductsSummary = async (): Promise<Product[]> => {
-    const products: Product[] = await prisma.product.findMany({
-        select: {
-            productID: true,
-            productName: true,
-            description: true,
-            length: true,
-            width: true,
-            height: true,
-            weight: true,
-            warranty: true,
-            category: true,
-            provider: true,
-            categoryID: true,
-            providerID: true,
-        },
-    });
+    const products: Product[] = await prisma.product.findMany();
     return products;
 };
 
@@ -260,54 +245,19 @@ const getProductFullJoinWithID = async (
         where: {
             productID: productID,
         },
-        select: {
-            productID: true,
-            productName: true,
-            description: true,
-            length: true,
-            width: true,
-            height: true,
-            weight: true,
-            warranty: true,
-            category: true,
-            provider: true,
-            categoryID: true,
-            providerID: true,
+        include: {
             productAttributes: {
-                select: {
+                include: {
                     attributeOption: {
-                        select: {
-                            typeID: true,
-                            optionID: true,
-                            optionValue: true,
-                            attributeType: {
-                                select: {
-                                    typeID: true,
-                                    typeValue: true,
-                                },
-                            },
+                        include: {
+                            attributeType: true,
                         },
                     },
                 },
             },
             productItems: {
-                select: {
-                    productID: true,
-                    itemID: true,
-                    thump: true,
-                    quantity: true,
-                    price: true,
-                    productCode: true,
-                    discount: true,
-                    color: true,
-                    storage: true,
-                    itemImages: {
-                        select: {
-                            imageID: true,
-                            itemID: true,
-                            source: true,
-                        },
-                    },
+                include: {
+                    itemImages: true,
                 },
             },
         },
@@ -326,7 +276,7 @@ const getProductFullJoinWithID = async (
 const getProductsFullJoinAfterFilter = async (
     categoryID?: string,
     providerID?: string,
-    quantity: number = 10
+    limit: number = 10
 ): Promise<ProductFullJoin[]> => {
     const products: Nullable<ProductFullJoin[]> = await prisma.product.findMany(
         {
@@ -334,55 +284,20 @@ const getProductsFullJoinAfterFilter = async (
                 categoryID: categoryID,
                 providerID: providerID,
             },
-            take: quantity,
-            select: {
-                productID: true,
-                productName: true,
-                description: true,
-                length: true,
-                width: true,
-                height: true,
-                weight: true,
-                warranty: true,
-                category: true,
-                provider: true,
-                categoryID: true,
-                providerID: true,
+            take: limit,
+            include: {
                 productAttributes: {
-                    select: {
+                    include: {
                         attributeOption: {
-                            select: {
-                                typeID: true,
-                                optionID: true,
-                                optionValue: true,
-                                attributeType: {
-                                    select: {
-                                        typeID: true,
-                                        typeValue: true,
-                                    },
-                                },
+                            include: {
+                                attributeType: true,
                             },
                         },
                     },
                 },
                 productItems: {
-                    select: {
-                        productID: true,
-                        itemID: true,
-                        thump: true,
-                        quantity: true,
-                        price: true,
-                        productCode: true,
-                        discount: true,
-                        color: true,
-                        storage: true,
-                        itemImages: {
-                            select: {
-                                imageID: true,
-                                itemID: true,
-                                source: true,
-                            },
-                        },
+                    include: {
+                        itemImages: true,
                     },
                 },
             },
@@ -392,6 +307,42 @@ const getProductsFullJoinAfterFilter = async (
     return products;
 };
 
+const getProductsWithSpecificItem = async (
+    products: {productId: string; itemId: string}[]
+) => {
+    // const product = await prisma.product.findMany({
+    //     where: {
+    //         productID: {
+    //             in: products..
+    //         },
+    //         productItems: {
+    //             some: {
+    //                 itemId: { in: products.map(p => p.itemId) },
+    //             },
+    //         },
+    //     },
+    //     include: {},
+    //     select: {
+    //         productAttributes: {
+    //             select: {
+    //                 attributeOption: {
+    //                     select: {
+    //                         typeID: true,
+    //                         optionID: true,
+    //                         optionValue: true,
+    //                         attributeType: {
+    //                             select: {
+    //                                 typeID: true,
+    //                                 typeValue: true,
+    //                             },
+    //                         },
+    //                     },
+    //                 },
+    //             },
+    //         },
+    // })
+};
+
 export default {
     createProduct,
     updateProduct,
@@ -399,4 +350,5 @@ export default {
     getProductsSummary,
     getProductFullJoinWithID,
     getProductsFullJoinAfterFilter,
+    getProductsWithSpecificItem,
 };

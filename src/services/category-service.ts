@@ -5,7 +5,7 @@ import {Nullable, CategoryType} from "@/common/types";
 import CategoryAlreadyExistError from "@/errors/category/category-already-exist";
 import CategoryDeletingError from "@/errors/category/category-deleting-error";
 import CategoryNotFoundError from "@/errors/category/category-not-found";
-import {Category} from "@prisma/client";
+import type {Category} from "@prisma/client";
 
 const getCategoryByName = async (
     categoryName: string

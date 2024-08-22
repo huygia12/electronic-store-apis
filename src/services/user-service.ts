@@ -1,6 +1,6 @@
 import {compareSync, hashSync} from "bcrypt";
 import {LoginRequest, SignupRequest, UserUpdateRequest} from "@/common/schemas";
-import {User, userRoles} from "@prisma/client";
+import {type User, userRoles} from "@prisma/client";
 import prisma from "@/common/prisma-client";
 import {
     Nullable,

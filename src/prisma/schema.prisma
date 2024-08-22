@@ -38,22 +38,30 @@ model Invoice {
   detailAddress  String
   userID         String           @db.Uuid
   createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  email          String
+  userName       String
+  note           String?
+  paymentID      String?
   User           User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
   invoiceProducts InvoiceProduct[]
 }
 
 model InvoiceProduct {
-  discount    Float?  @db.Real
-  price       Float   @db.Real
-  productName String
-  quantity    Int     @db.SmallInt
-  invoiceID   String  @db.Uuid
-  productID   String  @db.Uuid
-  productCode String
-  color       String
-  storage     String?
-  Invoice     Invoice @relation(fields: [invoiceID], references: [invoiceID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_invoiceID _Invoice_invoiceID_fk")
-  Product     Product @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_productID_Product_productID_fk")
+  discount     Float?  @db.Real
+  price        Float   @db.Real
+  productName  String
+  quantity     Int     @db.SmallInt
+  invoiceID    String  @db.Uuid
+  productID    String  @db.Uuid
+  productCode  String
+
+  thump        String?
+  color        String
+  storage      String?
+  categoryName String
+  providerName String
+  Invoice      Invoice @relation(fields: [invoiceID], references: [invoiceID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_invoiceID _Invoice_invoiceID_fk")
+  Product      Product @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_productID_Product_productID_fk")
 
   @@unique([invoiceID, productID], map: "invoice_product_unique")
 }

@@ -20,6 +20,7 @@ enum ResponseMessage {
     WRONG_PASSWORD = "Wrong password!",
     GENERATE_TOKEN_ERROR = "Generate token error!",
     PRODUCT_NOT_FOUND = "Product not found!",
+    REQUEST_MAC_NOT_EQUAL = "mac not equal",
 }
 
 enum RequestMethod {

@@ -6,7 +6,7 @@ import AttributeOptionAlreadyExistError from "@/errors/attribute/option-already-
 import AttributeOptionNotFound from "@/errors/attribute/option-not-found";
 import AttributeTypeAlreadyExistError from "@/errors/attribute/type-already-exist";
 import AttributeTypeNotFound from "@/errors/attribute/type-not-found";
-import {AttributeOption, AttributeType} from "@prisma/client";
+import type {AttributeOption, AttributeType} from "@prisma/client";
 
 const getAttributeTypeByID = async (
     typeID: string

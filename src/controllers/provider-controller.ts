@@ -2,7 +2,6 @@ import {Request, Response} from "express";
 import providerService from "../services/provider-service";
 import {StatusCodes} from "http-status-codes";
 import {ResponseMessage} from "@/common/constants";
-import {Provider} from "@prisma/client";
 import {ProviderRequest} from "@/common/schemas";
 import {ProviderType} from "@/common/types";
 

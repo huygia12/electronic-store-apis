@@ -3,7 +3,6 @@ import categoryService from "../services/category-service";
 import {StatusCodes} from "http-status-codes";
 import {ResponseMessage} from "@/common/constants";
 import {CategoryRequest} from "@/common/schemas";
-import {Category} from "@prisma/client";
 import {CategoryType} from "@/common/types";
 
 const createCategory = async (req: Request, res: Response) => {
