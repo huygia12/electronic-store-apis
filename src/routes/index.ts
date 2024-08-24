@@ -18,7 +18,7 @@ router.use("/v1/providers", space, providerRoute);
 router.use("/v1/categories", space, categoryRoute);
 router.use("/v1/attributes", space, attributeRoute);
 router.use("/v1/products", space, productRoute);
-router.use("/v1/payment", space, paymentRoute);
+router.use("/v1/invoices", space, paymentRoute);
 router.get("/healthcheck", (req: Request, res: Response) =>
     res.sendStatus(200)
 );

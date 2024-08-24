@@ -1,7 +1,12 @@
 import {ResponseMessage} from "@/common/constants";
 import prisma from "@/common/prisma-client";
 import {ProductItemRequest, ProductRequest} from "@/common/schemas";
-import {Nullable, ProductFullJoin} from "@/common/types";
+import {
+    Nullable,
+    ProductFullJoin,
+    ProductJoinWithItems,
+    ProductSummary,
+} from "@/common/types";
 import ProductNotFoundError from "@/errors/product/product-not-found";
 import type {Product} from "@prisma/client";
 import providerService from "./provider-service";
@@ -233,8 +238,13 @@ const deleteProduct = async (productID: string) => {
     });
 };
 
-const getProductsSummary = async (): Promise<Product[]> => {
-    const products: Product[] = await prisma.product.findMany();
+const getProductsSummary = async (): Promise<ProductSummary[]> => {
+    const products: ProductSummary[] = await prisma.product.findMany({
+        include: {
+            category: true,
+            provider: true,
+        },
+    });
     return products;
 };
 
@@ -308,39 +318,39 @@ const getProductsFullJoinAfterFilter = async (
 };
 
 const getProductsWithSpecificItem = async (
-    products: {productId: string; itemId: string}[]
-) => {
-    // const product = await prisma.product.findMany({
-    //     where: {
-    //         productID: {
-    //             in: products..
-    //         },
-    //         productItems: {
-    //             some: {
-    //                 itemId: { in: products.map(p => p.itemId) },
-    //             },
-    //         },
-    //     },
-    //     include: {},
-    //     select: {
-    //         productAttributes: {
-    //             select: {
-    //                 attributeOption: {
-    //                     select: {
-    //                         typeID: true,
-    //                         optionID: true,
-    //                         optionValue: true,
-    //                         attributeType: {
-    //                             select: {
-    //                                 typeID: true,
-    //                                 typeValue: true,
-    //                             },
-    //                         },
-    //                     },
-    //                 },
-    //             },
-    //         },
-    // })
+    products: {productID: string; itemID: string}[]
+): Promise<ProductJoinWithItems[]> => {
+    const productIds: string[] = [];
+    const itemIds: string[] = [];
+
+    products.forEach((product) => {
+        if (!productIds.includes(product.productID)) {
+            productIds.push(product.productID);
+        }
+        itemIds.push(product.itemID);
+    });
+
+    const productJoinWithItems: ProductJoinWithItems[] =
+        await prisma.product.findMany({
+            where: {
+                productID: {
+                    in: productIds,
+                },
+            },
+            include: {
+                category: true,
+                provider: true,
+                productItems: {
+                    where: {
+                        itemID: {
+                            in: itemIds,
+                        },
+                    },
+                },
+            },
+        });
+
+    return productJoinWithItems;
 };
 
 export default {

@@ -100,21 +100,27 @@ const productSchema = zod
     })
     .strict();
 
-const invoiceProduct = zod.object({
+const orderProductSchema = zod.object({
     productID: blankCheck(),
     itemID: blankCheck(),
     quantity: zod.number(),
 });
 
 const orderSchema = zod.object({
-    city: blankCheck(),
+    district: blankCheck(),
     ward: blankCheck(),
     province: blankCheck(),
     phoneNumber: blankCheck(),
     detailAddress: blankCheck(),
+    email: blankCheck(),
     userID: blankCheck(),
     note: z.string().optional(),
-    invoiceProducts: z.array(invoiceProduct),
+    shippingFee: z.number().optional(),
+    invoiceProducts: z
+        .array(orderProductSchema)
+        .refine((value) => value.length !== 0, {
+            message: "orderProducts cannot be empty",
+        }),
 });
 
 export type AttributeTypeRequest = z.infer<typeof attributeTypeSchema>;
@@ -134,6 +140,8 @@ export type UserUpdateRequest = z.infer<typeof userUpdateSchema>;
 export type ProductRequest = z.infer<typeof productSchema>;
 
 export type ProductItemRequest = z.infer<typeof productItemSchema>;
+
+export type OrderProductRequest = z.infer<typeof orderProductSchema>;
 
 export type OrderRequest = z.infer<typeof orderSchema>;
 
@@ -176,5 +184,8 @@ export default {
     },
     ["/products/:id"]: {
         [RequestMethod.PUT]: productSchema,
+    },
+    ["/invoices"]: {
+        [RequestMethod.POST]: orderSchema,
     },
 } as {[key: string]: {[method: string]: ZodSchema}};

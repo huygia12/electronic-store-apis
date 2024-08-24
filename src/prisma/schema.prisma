@@ -31,7 +31,7 @@ model Invoice {
   invoiceID      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   status         invoiceStatus
   payment        paymentMethod
-  city           String
+  district       String
   ward           String
   province       String
   phoneNumber    String
@@ -42,6 +42,7 @@ model Invoice {
   userName       String
   note           String?
   paymentID      String?
+  shippingFee    Float?
   User           User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
   invoiceProducts InvoiceProduct[]
 }
@@ -82,11 +83,11 @@ model Product {
   height           Float              @db.Real
   weight           Float              @db.Real
   warranty         Float              @db.Real
-  categoryID       String?            @db.Uuid
-  providerID       String?            @db.Uuid
+  categoryID       String             @db.Uuid
+  providerID       String             @db.Uuid
   invoiceProducts   InvoiceProduct[]
-  category         Category?          @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
-  provider         Provider?          @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
+  category         Category          @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
+  provider         Provider          @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
   productAttributes ProductAttribute[]
   productItems      ProductItem[]
   reviews           Review[]
@@ -110,9 +111,9 @@ model ProductItem {
   discount    Float?      @default(0) @db.Real
   color       String
   storage     String?
-  productID   String?     @db.Uuid
+  productID   String     @db.Uuid
   itemImages   ItemImage[]
-  Product     Product?    @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
+  Product     Product    @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
 }
 
 model Provider {

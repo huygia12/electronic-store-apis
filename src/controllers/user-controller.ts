@@ -233,7 +233,7 @@ const updateInfo = async (req: Request, res: Response) => {
     console.debug(`[user controller] update user successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
-        infor: updatedUser,
+        info: updatedUser,
     });
 };
 
@@ -246,7 +246,7 @@ const getUser = async (req: Request, res: Response) => {
     console.debug(`[user controller]: get user successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
-        infor: user,
+        info: user,
     });
 };
 
@@ -256,7 +256,7 @@ const getUsers = async (req: Request, res: Response) => {
     console.debug(`[user controller]: get users successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
-        infor: users,
+        info: users,
     });
 };
 

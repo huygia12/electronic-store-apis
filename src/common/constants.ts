@@ -21,6 +21,7 @@ enum ResponseMessage {
     GENERATE_TOKEN_ERROR = "Generate token error!",
     PRODUCT_NOT_FOUND = "Product not found!",
     REQUEST_MAC_NOT_EQUAL = "mac not equal",
+    REQUEST_DATA_INVALID = "Data invalid",
 }
 
 enum RequestMethod {
@@ -41,4 +42,25 @@ enum AuthToken {
     AC = "accessToken",
 }
 
-export {ResponseMessage, RequestMethod, AuthToken, UserRole};
+enum SocketNamespace {
+    PAYMENT = "PAYMENT",
+}
+
+enum Payment {
+    PAYMENT_RESULT = "payment:result",
+}
+
+enum SocketEvent {
+    CONNECT = "connection",
+    DISCONNECT = "disconnect",
+}
+
+export {
+    ResponseMessage,
+    RequestMethod,
+    AuthToken,
+    UserRole,
+    SocketNamespace,
+    SocketEvent,
+    Payment,
+};

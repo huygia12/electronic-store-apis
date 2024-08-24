@@ -6,6 +6,8 @@ import type {
     Product,
     ProductItem,
     Provider,
+    invoiceStatus,
+    paymentMethod,
     userRoles,
 } from "@prisma/client";
 
@@ -29,9 +31,34 @@ type ProductAttributeType = {
 
 type ProductItemType = ProductItem & {itemImages: ItemImage[]};
 
+type ProductJoinWithItems = Product & {category: Category} & {
+    provider: Provider;
+} & {productItems: ProductItem[]};
+
+type ProductSummary = Product & {
+    category: Category;
+} & {
+    provider: Provider;
+};
+
 type ProductFullJoin = Product & {
     productAttributes: ProductAttributeType[];
     productItems: ProductItemType[];
+};
+
+type OrderProductInsertion = {
+    discount: Nullable<number>;
+    price: number;
+    productName: string;
+    quantity: number;
+    invoiceID: string;
+    productID: string;
+    productCode: string;
+    thump: Nullable<string>;
+    color: string;
+    storage: Nullable<string>;
+    categoryName: string;
+    providerName: string;
 };
 
 interface UserDTO {
@@ -95,7 +122,10 @@ export type {
     UserDTO,
     UserInTokenPayload,
     UserResponseDTO,
+    ProductSummary,
     ProductFullJoin,
+    ProductJoinWithItems,
     ZaloPaymentOrder,
     ZaloPaymentResult,
+    OrderProductInsertion,
 };

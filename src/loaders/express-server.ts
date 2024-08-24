@@ -45,6 +45,10 @@ class ExpressServer {
             console.info("[express server]: Stopped");
         });
     }
+
+    public instance() {
+        return this._server;
+    }
 }
 
 export default ExpressServer;

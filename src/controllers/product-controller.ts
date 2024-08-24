@@ -55,10 +55,10 @@ const getProduct = async (req: Request, res: Response) => {
 const getProducts = async (req: Request, res: Response) => {
     const categoryID = req.query.categoryID as string;
     const providerID = req.query.providerID as string;
-    const detail = Boolean(req.query.detail);
+    const detail = Number(req.query.detail);
 
     let payload = null;
-    if (detail) {
+    if (detail === 1) {
         payload = await productService.getProductsSummary();
     } else {
         payload = await productService.getProductsFullJoinAfterFilter(

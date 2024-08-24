@@ -14,7 +14,11 @@ const schemaValidator = (
 
     return (req, res, next) => {
         console.debug(
-            `[schema validator] request body : ${JSON.stringify(req.body)}`
+            `[schema validator] request body : ${JSON.stringify(
+                req.body,
+                null,
+                2
+            )}`
         );
 
         const schema = schemaObject[req.method];
@@ -29,7 +33,9 @@ const schemaValidator = (
         } catch (error: unknown) {
             console.debug(
                 `[schema validator] zod detect errors : ${JSON.stringify(
-                    error
+                    error,
+                    null,
+                    2
                 )}`
             );
 

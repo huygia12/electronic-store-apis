@@ -6,6 +6,7 @@ type Config = {
     AT_KEY: string;
     RT_KEY: string;
     APP_DOMAIN: string;
+    CLIENT_ENDPOINT: string;
 };
 
 const ENV_FILE_PATH: string = resolve(".env");
@@ -28,6 +29,9 @@ const config: Config = {
     RT_KEY: process.env.RT_SECRET_KEY || "",
     APP_DOMAIN:
         process.env.APP_DOMAIN || `http://localhost:${process.env.PORT}`,
+    CLIENT_ENDPOINT:
+        process.env.CLIENT_ENDPOINT ||
+        `http://localhost:${process.env.CLIENT_PORT}`,
 };
 
 export default config;

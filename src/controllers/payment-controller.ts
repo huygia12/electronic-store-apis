@@ -1,5 +1,6 @@
 import {ResponseMessage} from "@/common/constants";
 import {zaloPayConfig} from "@/common/payment-config";
+import {OrderRequest} from "@/common/schemas";
 import {ZaloPaymentResult} from "@/common/types";
 import paymentService from "@/services/payment-service";
 import axios from "axios";
@@ -8,11 +9,19 @@ import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 
 const createPayment = async (req: Request, res: Response) => {
+    const order: OrderRequest = req.body;
+    const paymentOrder = paymentService.getZaloPayemtOrder(order);
     const response = await axios.post(zaloPayConfig.endpoint!, null, {
-        params: paymentService.getZaloPayemtOrder(),
+        params: paymentOrder,
     });
 
-    console.debug(`[payment controller]: createPayment : success`);
+    console.debug(
+        `[payment controller]: createPayment : ${JSON.stringify(
+            paymentOrder,
+            null,
+            2
+        )}`
+    );
     return res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: response.data,
@@ -45,6 +54,8 @@ const acceptPayment = async (req: Request, res: Response) => {
             console.debug(
                 `[payment controller]: acceptPayment : app_trans_id ${dataJson["app_trans_id"]}`
             );
+
+            console.log(JSON.stringify(dataJson.data));
         }
     } catch (error) {
         console.debug(

@@ -10,7 +10,14 @@ const isAuthorized = (req: Request, res: Response, next: NextFunction) => {
     const accessToken: Optional<string | string[]> =
         req.headers["authorization"];
 
-    if (typeof accessToken !== "string") {
+    checkAuth(accessToken);
+
+    console.debug(`[auth-middleware] Check token's authorization succeed`);
+    next();
+};
+
+const checkAuth = (token: Optional<string>) => {
+    if (typeof token !== "string") {
         console.debug(
             `[auth-middleware] Check request from admin failure: missing token`
         );
@@ -18,19 +25,13 @@ const isAuthorized = (req: Request, res: Response, next: NextFunction) => {
     }
 
     try {
-        jwtService.verifyAuthToken(
-            accessToken.replace("Bearer ", ""),
-            AuthToken.AC
-        );
+        jwtService.verifyAuthToken(token.replace("Bearer ", ""), AuthToken.AC);
     } catch {
         console.debug(
             `[auth-middleware]: Check token's authorization has been failed: invalid token`
         );
         throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
     }
-
-    console.debug(`[auth-middleware] Check token's authorization succeed`);
-    next();
 };
 
 const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
@@ -62,4 +63,5 @@ const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
 export const authMiddleware = {
     isAuthorized,
     isAdmin,
+    checkAuth,
 };
