@@ -29,13 +29,14 @@ import MissingTokenError from "@/errors/auth/missing-token";
 const signup = async (req: Request, res: Response) => {
     const userSignupReq: SignupRequest = req.body;
 
-    await userService.insertUser(userSignupReq);
+    const userID = await userService.insertUser(userSignupReq);
 
     console.debug(
         `[user controller]: Signup: user with email ${userSignupReq.email} has been signup successfull`
     );
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
+        info: userID,
     });
 };
 
@@ -196,6 +197,10 @@ const refreshToken = async (req: Request, res: Response) => {
         }
 
         //Down here token must be valid
+        await userService.deleteRefreshToken(
+            refreshTokenFromCookie,
+            userDecoded.userID
+        );
         const accessToken: string = await userService.refreshToken(
             res,
             userDecoded.userID
@@ -222,7 +227,7 @@ const refreshToken = async (req: Request, res: Response) => {
  * @param {Response} res
  */
 const updateInfo = async (req: Request, res: Response) => {
-    const userID: string = req.params.id;
+    const userID = req.params.id as string;
     const userUpdateReq: UserUpdateRequest = req.body;
 
     const updatedUser: UserResponseDTO = await userService.updateUserInfo(
@@ -238,7 +243,7 @@ const updateInfo = async (req: Request, res: Response) => {
 };
 
 const getUser = async (req: Request, res: Response) => {
-    const userID: string = req.params.id;
+    const userID = req.params.id as string;
 
     const user: Nullable<UserResponseDTO> =
         await userService.getUserResponseByID(userID);
@@ -251,12 +256,31 @@ const getUser = async (req: Request, res: Response) => {
 };
 
 const getUsers = async (req: Request, res: Response) => {
-    const users: UserResponseDTO[] = await userService.getUserResponseDTOs();
+    const recently = Boolean(req.query.recently as string);
+    let date: Optional<Date>;
+
+    if (recently) {
+        date = new Date();
+    }
+    const users: UserResponseDTO[] = await userService.getUserResponseDTOs(
+        date
+    );
 
     console.debug(`[user controller]: get users successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: users,
+    });
+};
+
+const deleteUser = async (req: Request, res: Response) => {
+    const userID = req.params.id as string;
+
+    await userService.deleteUserByID(userID);
+
+    console.debug(`[user controller]: get user successfull`);
+    res.status(StatusCodes.OK).json({
+        message: ResponseMessage.SUCCESS,
     });
 };
 
@@ -268,4 +292,5 @@ export default {
     updateInfo,
     getUser,
     getUsers,
+    deleteUser,
 };

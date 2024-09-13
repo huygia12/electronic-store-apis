@@ -12,14 +12,14 @@ const isAuthorized = (req: Request, res: Response, next: NextFunction) => {
 
     checkAuth(accessToken);
 
-    console.debug(`[auth-middleware] Check token's authorization succeed`);
+    console.debug(`[auth-middleware] Check authorization succeed`);
     next();
 };
 
 const checkAuth = (token: Optional<string>) => {
     if (typeof token !== "string") {
         console.debug(
-            `[auth-middleware] Check request from admin failure: missing token`
+            `[auth-middleware] Check authorization failure: missing token`
         );
         throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
     }
@@ -28,7 +28,7 @@ const checkAuth = (token: Optional<string>) => {
         jwtService.verifyAuthToken(token.replace("Bearer ", ""), AuthToken.AC);
     } catch {
         console.debug(
-            `[auth-middleware]: Check token's authorization has been failed: invalid token`
+            `[auth-middleware]: Check authorization has been failed: invalid token`
         );
         throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
     }

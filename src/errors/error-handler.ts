@@ -1,3 +1,4 @@
+import {ResponseMessage} from "@/common/constants";
 import {ResponsableError} from "@/errors/custom-error";
 import {ErrorRequestHandler, NextFunction, Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
@@ -17,7 +18,7 @@ const errorHandler: ErrorRequestHandler = (
     }
 
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        message: "Unexpected Error",
+        message: ResponseMessage.UNEXPECTED_ERROR,
     });
 };
 

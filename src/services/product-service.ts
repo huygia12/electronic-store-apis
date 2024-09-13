@@ -5,10 +5,10 @@ import {
     Nullable,
     ProductFullJoin,
     ProductJoinWithItems,
+    ProductStatus,
     ProductSummary,
 } from "@/common/types";
 import ProductNotFoundError from "@/errors/product/product-not-found";
-import type {Product} from "@prisma/client";
 import providerService from "./provider-service";
 import categoryService from "./category-service";
 import attributeService from "./attribute-service";
@@ -256,6 +256,8 @@ const getProductFullJoinWithID = async (
             productID: productID,
         },
         include: {
+            category: true,
+            provider: true,
             productAttributes: {
                 include: {
                     attributeOption: {
@@ -296,6 +298,8 @@ const getProductsFullJoinAfterFilter = async (
             },
             take: limit,
             include: {
+                category: true,
+                provider: true,
                 productAttributes: {
                     include: {
                         attributeOption: {
@@ -353,6 +357,27 @@ const getProductsWithSpecificItem = async (
     return productJoinWithItems;
 };
 
+const getNumberOfProducts = async (): Promise<number> => {
+    const quantity: number = await prisma.product.count();
+    return quantity;
+};
+
+const getStatus = async (productID: string): Promise<ProductStatus> => {
+    const productStatus = await prisma.review.groupBy({
+        by: [`productID`],
+        where: {
+            productID: productID,
+        },
+        _avg: {
+            rating: true,
+        },
+    });
+
+    return {
+        rating: productStatus[0]._avg.rating || 0,
+    };
+};
+
 export default {
     createProduct,
     updateProduct,
@@ -361,4 +386,6 @@ export default {
     getProductFullJoinWithID,
     getProductsFullJoinAfterFilter,
     getProductsWithSpecificItem,
+    getNumberOfProducts,
+    getStatus,
 };

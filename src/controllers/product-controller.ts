@@ -1,12 +1,18 @@
 import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 import productService from "../services/product-service";
-import {ProductFullJoin} from "@/common/types";
+import {
+    ClientEvents,
+    Optional,
+    ProductFullJoin,
+    ServerEvents,
+} from "@/common/types";
 import {ProductRequest} from "@/common/schemas";
 import {ResponseMessage} from "@/common/constants";
+import {Namespace, Server, Socket} from "socket.io";
 
 const createProduct = async (req: Request, res: Response) => {
-    const productCreateReq: ProductRequest = req.body;
+    const productCreateReq = req.body as ProductRequest;
 
     await productService.createProduct(productCreateReq);
 
@@ -19,7 +25,7 @@ const createProduct = async (req: Request, res: Response) => {
 };
 
 const updateProduct = async (req: Request, res: Response) => {
-    const productID: string = req.params.id;
+    const productID = req.params.id as string;
     const productUpdateReq: ProductRequest = req.body;
 
     await productService.updateProduct(productUpdateReq, productID);
@@ -30,7 +36,7 @@ const updateProduct = async (req: Request, res: Response) => {
 };
 
 const deleteProduct = async (req: Request, res: Response) => {
-    const productID: string = req.params.id;
+    const productID = req.params.id as string;
 
     await productService.deleteProduct(productID);
 
@@ -40,7 +46,7 @@ const deleteProduct = async (req: Request, res: Response) => {
 };
 
 const getProduct = async (req: Request, res: Response) => {
-    const productID: string = req.params.id;
+    const productID = req.params.id as string;
 
     const product: ProductFullJoin =
         await productService.getProductFullJoinWithID(productID);
@@ -73,10 +79,30 @@ const getProducts = async (req: Request, res: Response) => {
     });
 };
 
+const registerProductSocketHandlers = (
+    nameSpace: Namespace,
+    socket: Socket<ClientEvents, ServerEvents>
+) => {
+    socket.on(`product:join`, (payload) => {
+        socket.join(`product:${payload.productID}`);
+        console.debug(
+            `[socket server]: join user to product room : { socketID : ${socket.id}}`
+        );
+    });
+
+    socket.on(`product:leave`, (payload) => {
+        socket.leave(`product:${payload.productID}`);
+        console.debug(
+            `[socket server]: user leaving from product : { socketID : ${socket.id}}`
+        );
+    });
+};
+
 export default {
     createProduct,
     updateProduct,
     deleteProduct,
     getProducts,
     getProduct,
+    registerProductSocketHandlers,
 };

@@ -38,6 +38,8 @@ const signupSchema = zod
         userName: blankCheck(),
         email: blankCheck(),
         password: blankCheck(),
+        phoneNumber: blankCheck().optional(),
+        avatar: blankCheck().optional(),
     })
     .strict();
 
@@ -123,6 +125,18 @@ const orderSchema = zod.object({
         }),
 });
 
+const reviewCreationSchema = zod.object({
+    reviewContent: blankCheck(),
+    rating: zod.number().nullable(),
+    productID: blankCheck(),
+    userID: blankCheck(),
+    parentID: blankCheck().nullable(),
+});
+
+const reviewDeletionSchema = zod.object({
+    reviewID: blankCheck(),
+});
+
 export type AttributeTypeRequest = z.infer<typeof attributeTypeSchema>;
 
 export type AttributeOptionRequest = z.infer<typeof attributeOptionSchema>;
@@ -144,6 +158,10 @@ export type ProductItemRequest = z.infer<typeof productItemSchema>;
 export type OrderProductRequest = z.infer<typeof orderProductSchema>;
 
 export type OrderRequest = z.infer<typeof orderSchema>;
+
+export type ReviewCreationRequest = z.infer<typeof reviewCreationSchema>;
+
+export type ReviewDeletionRequest = z.infer<typeof reviewDeletionSchema>;
 
 export default {
     ["/attributes"]: {
@@ -187,5 +205,9 @@ export default {
     },
     ["/invoices"]: {
         [RequestMethod.POST]: orderSchema,
+    },
+    ["review"]: {
+        ["create"]: reviewCreationSchema,
+        ["delete"]: reviewDeletionSchema,
     },
 } as {[key: string]: {[method: string]: ZodSchema}};

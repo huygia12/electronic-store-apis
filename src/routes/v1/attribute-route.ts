@@ -1,7 +1,7 @@
 import express from "express";
 import attributeController from "../../controllers/attribute-controller";
 import {authMiddleware} from "@/middleware/auth-middleware";
-import schemaValidator from "@/middleware/schema-validator";
+import {expressSchemaValidator} from "@/middleware/schema-validator";
 
 const router = express.Router();
 
@@ -10,14 +10,14 @@ router.post(
     "/",
     authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
-    schemaValidator("/attributes"),
+    expressSchemaValidator("/attributes"),
     attributeController.createAttributeType
 );
 router.put(
     "/:typeID",
     authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
-    schemaValidator("/attributes/:typeID"),
+    expressSchemaValidator("/attributes/:typeID"),
     attributeController.updateAttributeType
 );
 router.delete(
@@ -32,14 +32,14 @@ router.post(
     "/:typeID/options",
     authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
-    schemaValidator("/attributes/:typeID/options"),
+    expressSchemaValidator("/attributes/:typeID/options"),
     attributeController.createAttributeOption
 );
 router.put(
     "/:typeID/options/:optionID",
     authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
-    schemaValidator("/attributes/:typeID/options/:optionID"),
+    expressSchemaValidator("/attributes/:typeID/options/:optionID"),
     attributeController.updateAttributeOption
 );
 router.delete(

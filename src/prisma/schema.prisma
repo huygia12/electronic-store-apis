@@ -8,16 +8,16 @@ datasource db {
 }
 
 model AttributeOption {
-  optionID         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  optionValue      String
-  typeID           String             @db.Uuid
-  attributeType    AttributeType      @relation(fields: [typeID], references: [typeID], onDelete: NoAction, onUpdate: NoAction, map: "AttributeOption_typeID_AttributeType_typeID_fk")
-  productAttributes ProductAttribute[]   
+  optionID          String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  optionValue       String
+  typeID            String             @db.Uuid
+  attributeType     AttributeType      @relation(fields: [typeID], references: [typeID], onDelete: NoAction, onUpdate: NoAction, map: "AttributeOption_typeID_AttributeType_typeID_fk")
+  productAttributes ProductAttribute[]
 }
 
 model AttributeType {
-  typeID          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  typeValue       String
+  typeID           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  typeValue        String
   attributeOptions AttributeOption[]
 }
 
@@ -28,22 +28,22 @@ model Category {
 }
 
 model Invoice {
-  invoiceID      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  status         invoiceStatus
-  payment        paymentMethod
-  district       String
-  ward           String
-  province       String
-  phoneNumber    String
-  detailAddress  String
-  userID         String           @db.Uuid
-  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
-  email          String
-  userName       String
-  note           String?
-  paymentID      String?
-  shippingFee    Float?
-  User           User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
+  invoiceID       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status          invoiceStatus
+  payment         paymentMethod
+  district        String
+  ward            String
+  province        String
+  phoneNumber     String
+  detailAddress   String
+  userID          String           @db.Uuid
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  email           String
+  userName        String
+  note            String?
+  paymentID       String?
+  shippingFee     Float?
+  User            User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
   invoiceProducts InvoiceProduct[]
 }
 
@@ -55,12 +55,11 @@ model InvoiceProduct {
   invoiceID    String  @db.Uuid
   productID    String  @db.Uuid
   productCode  String
-
-  thump        String?
   color        String
   storage      String?
   categoryName String
   providerName String
+  thump        String?
   Invoice      Invoice @relation(fields: [invoiceID], references: [invoiceID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_invoiceID _Invoice_invoiceID_fk")
   Product      Product @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_productID_Product_productID_fk")
 
@@ -75,19 +74,19 @@ model ItemImage {
 }
 
 model Product {
-  productID        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productName      String             @db.VarChar(255)
-  description      String?
-  length           Float              @db.Real
-  width            Float              @db.Real
-  height           Float              @db.Real
-  weight           Float              @db.Real
-  warranty         Float              @db.Real
-  categoryID       String             @db.Uuid
-  providerID       String             @db.Uuid
+  productID         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productName       String             @db.VarChar(255)
+  description       String?
+  length            Float              @db.Real
+  width             Float              @db.Real
+  height            Float              @db.Real
+  weight            Float              @db.Real
+  warranty          Float              @db.Real
+  categoryID        String             @db.Uuid
+  providerID        String             @db.Uuid
   invoiceProducts   InvoiceProduct[]
-  category         Category          @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
-  provider         Provider          @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
+  category          Category           @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
+  provider          Provider           @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
   productAttributes ProductAttribute[]
   productItems      ProductItem[]
   reviews           Review[]
@@ -111,25 +110,29 @@ model ProductItem {
   discount    Float?      @default(0) @db.Real
   color       String
   storage     String?
-  productID   String     @db.Uuid
-  itemImages   ItemImage[]
-  Product     Product    @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
+  productID   String      @db.Uuid
+  itemImages  ItemImage[]
+  Product     Product     @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
 }
 
 model Provider {
   providerID   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   providerName String    @db.VarChar(255)
-  products      Product[]
+  products     Product[]
 }
 
 model Review {
-  reviewID      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  reviewContent String
-  rating        Int?    @default(5) @db.SmallInt
-  productID     String  @db.Uuid
-  userID        String  @db.Uuid
-  Product       Product @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "Review_productID_Product_productID_fk")
-  User          User    @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Review_userID_User_userID_fk")
+  reviewID       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewContent  String
+  rating         Int?      @db.SmallInt
+  productID      String    @db.Uuid
+  userID         String    @db.Uuid
+  createdAt      DateTime? @default(now()) @db.Timestamptz(6)
+  parentID       String?   @db.Uuid
+  parentReview   Review?   @relation("ReviewToReview", fields: [parentID], references: [reviewID], onDelete: Cascade, onUpdate: NoAction, map: "Review_parentID_reviewID_fk")
+  childrenReview Review[]  @relation("ReviewToReview")
+  product        Product   @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "Review_productID_Product_productID_fk")
+  user           User      @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Review_userID_User_userID_fk")
 }
 
 model SlideShow {
@@ -148,26 +151,31 @@ model Store {
   phoneNumber String?     @db.VarChar(10)
   email       String?     @db.VarChar(255)
   bannerUrls  String[]
-  slideShows   SlideShow[]
+  slideShows  SlideShow[]
 }
 
 model User {
-  userID           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userName         String    @db.VarChar(255)
-  email            String    @unique(map: "User_email_unique") @db.VarChar(255)
-  password         String    @db.VarChar(255)
-  phoneNumber      String?   @db.VarChar(10)
-  avatar           String?
-  isBanned         Boolean   @default(false)
-  role             userRoles @default(CLIENT)
-  refreshTokensUsed String[] @map("refreshTokenUsed")
-  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
-  updateAt         DateTime  @default(now()) @db.Timestamptz(6)
+  userID            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userName          String    @db.VarChar(255)
+  email             String    @unique(map: "User_email_unique") @db.VarChar(255)
+  password          String    @db.VarChar(255)
+  phoneNumber       String?   @db.VarChar(10)
+  avatar            String?
+  isBanned          Boolean   @default(false)
+  role              userRoles @default(CLIENT)
+  refreshTokensUsed String[]  @map("refreshTokenUsed")
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updateAt          DateTime  @default(now()) @db.Timestamptz(6)
+  deletedAt         DateTime? @db.Timestamp(6)
   invoices          Invoice[]
-  review           Review[]
+  review            Review[]
 }
 
 enum invoiceStatus {
+  new
+  shipping
+  done
+  abort
   NEW
   SHIPPING
   DONE
@@ -175,6 +183,8 @@ enum invoiceStatus {
 }
 
 enum paymentMethod {
+  cod
+  banking
   COD
   BANKING
 }
@@ -182,4 +192,6 @@ enum paymentMethod {
 enum userRoles {
   ADMIN
   CLIENT
+  admin
+  client
 }

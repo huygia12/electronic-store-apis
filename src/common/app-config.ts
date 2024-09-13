@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import {resolve} from "path";
 
 type Config = {
-    serverPort: number;
+    SERVER_PORT: number;
     AT_KEY: string;
     RT_KEY: string;
     APP_DOMAIN: string;
@@ -24,7 +24,7 @@ process.env.NODE_ENV = process.env.NODE_ENV || "development";
 process.env.PORT = process.env.PORT || "8000";
 
 const config: Config = {
-    serverPort: parseInt(process.env.PORT, 10),
+    SERVER_PORT: parseInt(process.env.PORT, 10),
     AT_KEY: process.env.AT_SECRET_KEY || "",
     RT_KEY: process.env.RT_SECRET_KEY || "",
     APP_DOMAIN:

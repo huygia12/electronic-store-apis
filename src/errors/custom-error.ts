@@ -19,5 +19,11 @@ interface ValidationError {
     }[];
 }
 
-export type {ValidationError};
+interface SocketIOError {
+    status: number;
+    message?: string;
+    detail?: unknown;
+}
+
+export type {ValidationError, SocketIOError};
 export {CustomError, ResponsableError};

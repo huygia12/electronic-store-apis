@@ -2,14 +2,17 @@ import type {
     AttributeOption,
     AttributeType,
     Category,
+    Invoice,
+    InvoiceProduct,
     ItemImage,
     Product,
     ProductItem,
     Provider,
-    invoiceStatus,
-    paymentMethod,
+    Review,
     userRoles,
 } from "@prisma/client";
+import {ReviewCreationRequest} from "./schemas";
+import {SocketIOError} from "@/errors/custom-error";
 
 type Nullable<T> = T | null;
 
@@ -37,14 +40,19 @@ type ProductJoinWithItems = Product & {category: Category} & {
 
 type ProductSummary = Product & {
     category: Category;
-} & {
     provider: Provider;
 };
 
 type ProductFullJoin = Product & {
+    category: Category;
+    provider: Provider;
     productAttributes: ProductAttributeType[];
     productItems: ProductItemType[];
 };
+
+interface ProductStatus {
+    rating: number;
+}
 
 type OrderProductInsertion = {
     discount: Nullable<number>;
@@ -113,6 +121,61 @@ interface ZaloPaymentResult {
     return_message: string;
 }
 
+interface Statistic {
+    users: number;
+    products: number;
+    invoices: {
+        today: number;
+        yesterday: number;
+    };
+    revenue: {
+        today: number;
+        yesterday: number;
+    };
+}
+
+type InvoiceFullJoin = Invoice & {invoiceProducts: InvoiceProduct[]};
+
+type ReviewFullJoin = Review & {
+    childrenReview: (Review & {
+        childrenReview: Review[];
+        user: {
+            userID: string;
+            userName: string;
+            avatar: Nullable<string>;
+            role: userRoles;
+            createdAt: Date;
+        };
+        product: {productName: string};
+    })[];
+    user: {
+        userID: string;
+        userName: string;
+        avatar: Nullable<string>;
+        role: userRoles;
+        createdAt: Date;
+    };
+    product: {productName: string};
+};
+
+interface ClientEvents {
+    "product:join": (payload: {productID: string}) => void;
+    "product:leave": (payload: {productID: string}) => void;
+    "review:create": (
+        payload: ReviewCreationRequest,
+        callback: (status: Optional<SocketIOError>) => void
+    ) => void;
+    "review:delete": (
+        payload: {reviewID: string},
+        callback: (status: Optional<SocketIOError>) => void
+    ) => void;
+}
+
+interface ServerEvents {
+    "review:create": (payload: {review: ReviewFullJoin}) => void;
+    "review:delete": (payload: {review: Review}) => void;
+}
+
 export type {
     Nullable,
     Optional,
@@ -125,7 +188,13 @@ export type {
     ProductSummary,
     ProductFullJoin,
     ProductJoinWithItems,
+    ProductStatus,
     ZaloPaymentOrder,
     ZaloPaymentResult,
     OrderProductInsertion,
+    Statistic,
+    InvoiceFullJoin,
+    ClientEvents,
+    ServerEvents,
+    ReviewFullJoin,
 };

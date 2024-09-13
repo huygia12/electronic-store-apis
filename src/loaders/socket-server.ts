@@ -1,9 +1,10 @@
 import {Namespace, Server} from "socket.io";
 import {Server as ExpressServer} from "node:http";
-import config from "@/common/app-config";
-import {SocketEvent, SocketNamespace} from "@/common/constants";
-import {authMiddleware} from "@/middleware/auth-middleware";
-
+import {SocketNamespace} from "@/common/constants";
+import {instrument} from "@socket.io/admin-ui";
+import reviewController from "@/controllers/review-controller";
+import productController from "@/controllers/product-controller";
+import {ClientEvents, ServerEvents} from "@/common/types";
 interface Option {
     debug: boolean;
 }
@@ -11,37 +12,55 @@ interface Option {
 class SocketServer {
     private _io: Server;
     private _debug: boolean;
-    private _paymentNamespace: Namespace;
+    private _commentNamespace: Namespace;
+    private _notificationNamespace: Namespace;
 
-    public constructor(expressServer: ExpressServer, opts?: Option) {
-        this._io = new Server(expressServer, {
+    public constructor(
+        expressServer: ExpressServer,
+        clientEndpoint: string,
+        opts?: Option
+    ) {
+        this._io = new Server<ClientEvents, ServerEvents>(expressServer, {
             cors: {
-                origin: config.CLIENT_ENDPOINT,
+                origin: [clientEndpoint, `https://admin.socket.io`],
+                methods: ["GET", "POST"],
                 credentials: true,
             },
         });
         this._debug = opts?.debug || false;
 
+        instrument(this._io, {
+            auth: false,
+            mode: "development",
+            namespaceName: SocketNamespace.COMMENT,
+        });
+
         this.listen();
     }
 
-    private debug(msg: string): void {
-        this._debug && console.debug(`[socket server]: ${msg}`);
-    }
-
     private listen(): void {
-        this._io.use((socket, next) => {
-            const token: string = socket.handshake.auth["token"];
-            authMiddleware.checkAuth(token);
-            next();
-        });
+        // this._io.use((socket, next) => {
 
-        this._paymentNamespace = this._io
-            .of(SocketNamespace.PAYMENT)
-            .on(SocketEvent.CONNECT, (socket) => {
+        //     const token: string = socket.handshake.auth["token"];
+        //     authMiddleware.checkAuth(token);
+        //     next();
+        // });
+        this._commentNamespace = this._io
+            .of(SocketNamespace.COMMENT)
+            .on(`connection`, (socket) => {
                 this.debug(`An user with socket ID of ${socket.id} connected`);
 
-                socket.on(SocketEvent.DISCONNECT, () => {
+                reviewController.registerReviewSocketHandlers(
+                    this._commentNamespace,
+                    socket
+                );
+
+                productController.registerProductSocketHandlers(
+                    this._commentNamespace,
+                    socket
+                );
+
+                socket.on(`disconnect`, () => {
                     this.debug(
                         `An user with socket ID of ${socket.id} disconnected`
                     );
@@ -49,6 +68,10 @@ class SocketServer {
             });
 
         console.log("[socket server]: Server is listening");
+    }
+
+    public getIO() {
+        return this._io;
     }
 
     public close(): void {
@@ -59,8 +82,8 @@ class SocketServer {
         });
     }
 
-    public getPaymentNamespace() {
-        return this._paymentNamespace;
+    private debug(msg: string): void {
+        this._debug && console.debug(`[socket server]: ${msg}`);
     }
 }
 

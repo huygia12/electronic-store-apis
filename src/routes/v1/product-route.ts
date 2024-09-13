@@ -1,7 +1,7 @@
 import express from "express";
 import productController from "../../controllers/product-controller";
 import {authMiddleware} from "@/middleware/auth-middleware";
-import schemaValidator from "@/middleware/schema-validator";
+import {expressSchemaValidator} from "@/middleware/schema-validator";
 
 const router = express.Router();
 
@@ -11,14 +11,14 @@ router.post(
     "/",
     authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
-    schemaValidator("/products"),
+    expressSchemaValidator("/products"),
     productController.createProduct
 );
 router.put(
     "/:id",
     authMiddleware.isAuthorized,
     authMiddleware.isAdmin,
-    schemaValidator("/products/:id"),
+    expressSchemaValidator("/products/:id"),
     productController.updateProduct
 );
 router.delete("/:id", authMiddleware.isAdmin, productController.deleteProduct);

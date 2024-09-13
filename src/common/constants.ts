@@ -22,6 +22,8 @@ enum ResponseMessage {
     PRODUCT_NOT_FOUND = "Product not found!",
     REQUEST_MAC_NOT_EQUAL = "mac not equal",
     REQUEST_DATA_INVALID = "Data invalid",
+    UNEXPECTED_ERROR = "Unexpected Error",
+    REVIEW_NOT_FOUND = "Review not found!",
 }
 
 enum RequestMethod {
@@ -43,16 +45,12 @@ enum AuthToken {
 }
 
 enum SocketNamespace {
-    PAYMENT = "PAYMENT",
+    COMMENT = "/comment",
+    NOTIFICATION = "/notification",
 }
 
 enum Payment {
     PAYMENT_RESULT = "payment:result",
-}
-
-enum SocketEvent {
-    CONNECT = "connection",
-    DISCONNECT = "disconnect",
 }
 
 export {
@@ -61,6 +59,5 @@ export {
     AuthToken,
     UserRole,
     SocketNamespace,
-    SocketEvent,
     Payment,
 };

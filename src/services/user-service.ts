@@ -20,6 +20,7 @@ import {Response} from "express";
 const getUserByEmail = async (email: string): Promise<Nullable<User>> => {
     const user: Nullable<User> = await prisma.user.findFirst({
         where: {
+            deletedAt: null,
             email: email,
         },
     });
@@ -67,6 +68,7 @@ const getUserResponseByID = async (
 ): Promise<UserResponseDTO> => {
     const user: Nullable<UserResponseDTO> = await prisma.user.findUnique({
         where: {
+            deletedAt: null,
             userID: userID,
         },
         select: {
@@ -95,6 +97,7 @@ const getUserResponseByID = async (
 const getUserDTOByID = async (userID: string): Promise<UserDTO> => {
     const user: Nullable<UserDTO> = await prisma.user.findUnique({
         where: {
+            deletedAt: null,
             userID: userID,
         },
         select: {
@@ -202,7 +205,9 @@ const refreshToken = async (res: Response, userID: string): Promise<string> => {
     return accessToken;
 };
 
-const insertUser = async (validPayload: SignupRequest) => {
+const insertUser = async (
+    validPayload: SignupRequest
+): Promise<{userID: string}> => {
     const userHolder: Nullable<User> = await getUserByEmail(validPayload.email);
 
     if (userHolder) {
@@ -212,15 +217,21 @@ const insertUser = async (validPayload: SignupRequest) => {
         throw new UserAlreadyExistError(ResponseMessage.USER_ALREADY_EXISTS);
     }
 
-    await prisma.user.create({
+    const userID = await prisma.user.create({
         data: {
             userName: validPayload.userName,
             email: validPayload.email,
             password: hashSync(validPayload.password, 10),
+            avatar: validPayload.avatar || null,
+            phoneNumber: validPayload.phoneNumber || null,
             role: userRoles.CLIENT,
             refreshTokensUsed: [],
         },
+        select: {
+            userID: true,
+        },
     });
+    return userID;
 };
 
 const updateUserInfo = async (
@@ -251,6 +262,7 @@ const updateUserInfo = async (
             email: validPayload.email,
             phoneNumber: validPayload.phoneNumber,
             avatar: validPayload.avatar,
+            updateAt: new Date(),
         },
         select: {
             userID: true,
@@ -316,8 +328,21 @@ const clearUserRefreshTokenUsed = async (userID: string) => {
     });
 };
 
-const getUserResponseDTOs = async (): Promise<UserResponseDTO[]> => {
+const getUserResponseDTOs = async (date?: Date): Promise<UserResponseDTO[]> => {
+    const startOfDay = date && new Date(date.setHours(0, 0, 0, 0));
+    const endOfDay = date && new Date(date.setHours(23, 59, 59, 999));
+
     const users: UserResponseDTO[] = await prisma.user.findMany({
+        where: {
+            deletedAt: null,
+            createdAt: {
+                gte: startOfDay,
+                lte: endOfDay,
+            },
+            role: {
+                not: userRoles.ADMIN,
+            },
+        },
         select: {
             userID: true,
             userName: true,
@@ -332,6 +357,17 @@ const getUserResponseDTOs = async (): Promise<UserResponseDTO[]> => {
     });
 
     return users;
+};
+
+const deleteUserByID = async (id: string) => {
+    await prisma.user.update({
+        data: {
+            deletedAt: new Date(),
+        },
+        where: {
+            userID: id,
+        },
+    });
 };
 
 const checkIfRefreshTokenExistInDB = async (
@@ -350,6 +386,15 @@ const checkIfRefreshTokenExistInDB = async (
     return user !== null;
 };
 
+const getNumberOfUsers = async (): Promise<number> => {
+    const quantity: number = await prisma.user.count({
+        where: {
+            deletedAt: null,
+        },
+    });
+    return quantity;
+};
+
 export default {
     getUserResponseByID,
     insertUser,
@@ -362,4 +407,6 @@ export default {
     login,
     refreshToken,
     checkIfRefreshTokenExistInDB,
+    deleteUserByID,
+    getNumberOfUsers,
 };
