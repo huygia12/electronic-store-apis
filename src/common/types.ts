@@ -41,6 +41,7 @@ type ProductJoinWithItems = Product & {category: Category} & {
 type ProductSummary = Product & {
     category: Category;
     provider: Provider;
+    productItems: {thump: string}[];
 };
 
 type ProductFullJoin = Product & {

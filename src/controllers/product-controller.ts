@@ -61,11 +61,13 @@ const getProduct = async (req: Request, res: Response) => {
 const getProducts = async (req: Request, res: Response) => {
     const categoryID = req.query.categoryID as string;
     const providerID = req.query.providerID as string;
+    const productName = req.query.productName as string;
+    const limit = Number(req.query.limit);
     const detail = Number(req.query.detail);
 
     let payload = null;
     if (detail === 1) {
-        payload = await productService.getProductsSummary();
+        payload = await productService.getProductsSummary(productName, limit);
     } else {
         payload = await productService.getProductsFullJoinAfterFilter(
             categoryID,

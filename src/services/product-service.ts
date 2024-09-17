@@ -238,12 +238,27 @@ const deleteProduct = async (productID: string) => {
     });
 };
 
-const getProductsSummary = async (): Promise<ProductSummary[]> => {
+const getProductsSummary = async (
+    productName?: string,
+    limit: number = 10
+): Promise<ProductSummary[]> => {
     const products: ProductSummary[] = await prisma.product.findMany({
+        where: {
+            productName: {
+                contains: productName,
+            },
+        },
         include: {
             category: true,
             provider: true,
+            productItems: {
+                select: {
+                    thump: true,
+                },
+                take: 1,
+            },
         },
+        take: limit,
     });
     return products;
 };
