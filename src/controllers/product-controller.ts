@@ -1,15 +1,10 @@
 import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 import productService from "../services/product-service";
-import {
-    ClientEvents,
-    Optional,
-    ProductFullJoin,
-    ServerEvents,
-} from "@/common/types";
+import {ClientEvents, ProductFullJoin, ServerEvents} from "@/common/types";
 import {ProductRequest} from "@/common/schemas";
 import {ResponseMessage} from "@/common/constants";
-import {Namespace, Server, Socket} from "socket.io";
+import {Namespace, Socket} from "socket.io";
 
 const createProduct = async (req: Request, res: Response) => {
     const productCreateReq = req.body as ProductRequest;
@@ -62,12 +57,12 @@ const getProducts = async (req: Request, res: Response) => {
     const categoryID = req.query.categoryID as string;
     const providerID = req.query.providerID as string;
     const productName = req.query.productName as string;
-    const limit = Number(req.query.limit);
-    const detail = Number(req.query.detail);
+    const limit = Number(req.query.limit) || 10;
+    const detail = Boolean(req.query.detail);
 
     let payload = null;
-    if (detail === 1) {
-        payload = await productService.getProductsSummary(productName, limit);
+    if (!detail) {
+        payload = await productService.getProductsSummary(limit, productName);
     } else {
         payload = await productService.getProductsFullJoinAfterFilter(
             categoryID,

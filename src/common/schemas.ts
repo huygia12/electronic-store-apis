@@ -133,8 +133,27 @@ const reviewCreationSchema = zod.object({
     parentID: blankCheck().nullable(),
 });
 
+const slideUpdateSchema = zod.object({
+    url: blankCheck(),
+    ref: blankCheck(),
+    index: zod.number(),
+});
+
+const bannerUpdateSchema = zod.object({
+    newBanner: zod.string().nullable(),
+    position: zod.string(),
+});
+
 const reviewDeletionSchema = zod.object({
     reviewID: blankCheck(),
+});
+
+const storeUpdateSchema = zod.object({
+    storeName: blankCheck(),
+    description: zod.string().nullable(),
+    address: zod.string().nullable(),
+    phoneNumber: zod.string().nullable(),
+    email: zod.string().nullable(),
 });
 
 export type AttributeTypeRequest = z.infer<typeof attributeTypeSchema>;
@@ -162,6 +181,10 @@ export type OrderRequest = z.infer<typeof orderSchema>;
 export type ReviewCreationRequest = z.infer<typeof reviewCreationSchema>;
 
 export type ReviewDeletionRequest = z.infer<typeof reviewDeletionSchema>;
+
+export type SlideUpdateRequest = z.infer<typeof slideUpdateSchema>;
+
+export type BannerUpdateRequest = z.infer<typeof bannerUpdateSchema>;
 
 export default {
     ["/attributes"]: {
@@ -205,6 +228,15 @@ export default {
     },
     ["/invoices"]: {
         [RequestMethod.POST]: orderSchema,
+    },
+    ["/stores/:id/slides"]: {
+        [RequestMethod.PATCH]: slideUpdateSchema,
+    },
+    ["/stores/:id/banners"]: {
+        [RequestMethod.PATCH]: bannerUpdateSchema,
+    },
+    ["/stores/:id"]: {
+        [RequestMethod.PUT]: storeUpdateSchema,
     },
     ["review"]: {
         ["create"]: reviewCreationSchema,

@@ -136,11 +136,12 @@ model Review {
 }
 
 model SlideShow {
-  slideID String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slideID String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   url     String
-  alt     String
-  storeID String @db.Uuid
-  Store   Store  @relation(fields: [storeID], references: [storeID], onDelete: NoAction, onUpdate: NoAction, map: "SlideShow_storeID_Store_storeID_fk")
+  storeID String  @db.Uuid
+  index   Int     @db.SmallInt
+  ref     String?
+  Store   Store   @relation(fields: [storeID], references: [storeID], onDelete: NoAction, onUpdate: NoAction, map: "SlideShow_storeID_Store_storeID_fk")
 }
 
 model Store {
@@ -150,7 +151,8 @@ model Store {
   address     String?
   phoneNumber String?     @db.VarChar(10)
   email       String?     @db.VarChar(255)
-  bannerUrls  String[]
+  leftBanner  String?
+  rightBanner String?
   slideShows  SlideShow[]
 }
 

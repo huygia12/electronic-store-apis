@@ -24,6 +24,8 @@ enum ResponseMessage {
     REQUEST_DATA_INVALID = "Data invalid",
     UNEXPECTED_ERROR = "Unexpected Error",
     REVIEW_NOT_FOUND = "Review not found!",
+    POSITION_INVALID = "Position can only be left or right!",
+    STORE_NOT_FOUND = "Store not found!",
 }
 
 enum RequestMethod {

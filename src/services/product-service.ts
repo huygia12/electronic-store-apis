@@ -239,8 +239,8 @@ const deleteProduct = async (productID: string) => {
 };
 
 const getProductsSummary = async (
-    productName?: string,
-    limit: number = 10
+    limit: number = 10,
+    productName?: string
 ): Promise<ProductSummary[]> => {
     const products: ProductSummary[] = await prisma.product.findMany({
         where: {

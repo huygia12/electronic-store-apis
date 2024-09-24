@@ -9,6 +9,8 @@ import type {
     ProductItem,
     Provider,
     Review,
+    SlideShow,
+    Store,
     userRoles,
 } from "@prisma/client";
 import {ReviewCreationRequest} from "./schemas";
@@ -159,6 +161,8 @@ type ReviewFullJoin = Review & {
     product: {productName: string};
 };
 
+type StoreFullJoin = Store & {slideShows: SlideShow[]};
+
 interface ClientEvents {
     "product:join": (payload: {productID: string}) => void;
     "product:leave": (payload: {productID: string}) => void;
@@ -198,4 +202,5 @@ export type {
     ClientEvents,
     ServerEvents,
     ReviewFullJoin,
+    StoreFullJoin,
 };

@@ -8,6 +8,7 @@ import paymentRoute from "./v1/payment-route";
 import statisticRoute from "./v1/statistic-route";
 import invoiceRoute from "./v1/invoice-route";
 import reviewRoute from "./v1/review-route";
+import storeRoute from "./v1/store-route";
 import {NextFunction} from "express-serve-static-core";
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.use("/v1/orders", space, paymentRoute);
 router.use("/v1/statistic", space, statisticRoute);
 router.use("/v1/invoices", space, invoiceRoute);
 router.use("/v1/reviews", space, reviewRoute);
+router.use("/v1/stores", space, storeRoute);
 router.get("/healthcheck", (req: Request, res: Response) =>
     res.sendStatus(200)
 );
