@@ -43,6 +43,7 @@ model Invoice {
   note            String?
   paymentID       String?
   shippingFee     Float?
+  shippingTime    Int?             @default(0)
   User            User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
   invoiceProducts InvoiceProduct[]
 }
@@ -53,17 +54,18 @@ model InvoiceProduct {
   productName  String
   quantity     Int     @db.SmallInt
   invoiceID    String  @db.Uuid
-  productID    String  @db.Uuid
   productCode  String
   color        String
   storage      String?
   categoryName String
   providerName String
   thump        String?
+  itemID       String  @db.Uuid
+  productID    String
   Invoice      Invoice @relation(fields: [invoiceID], references: [invoiceID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_invoiceID _Invoice_invoiceID_fk")
-  Product      Product @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_productID_Product_productID_fk")
+  ProductItem  ProductItem @relation(fields: [itemID], references: [itemID], onDelete: NoAction, onUpdate: NoAction, map: "invoiceproduct_itemid_productitem_itemid_fk")
 
-  @@unique([invoiceID, productID], map: "invoice_product_unique")
+  @@id([itemID, invoiceID], map: "invoice_product_unique")
 }
 
 model ItemImage {
@@ -84,7 +86,6 @@ model Product {
   warranty          Float              @db.Real
   categoryID        String             @db.Uuid
   providerID        String             @db.Uuid
-  invoiceProducts   InvoiceProduct[]
   category          Category           @relation(fields: [categoryID], references: [categoryID], onDelete: NoAction, onUpdate: NoAction, map: "Product_categoryID_Category_categoryID_fk")
   provider          Provider           @relation(fields: [providerID], references: [providerID], onDelete: NoAction, onUpdate: NoAction, map: "Product_providerID_Provider_providerID_fk")
   productAttributes ProductAttribute[]
@@ -111,6 +112,7 @@ model ProductItem {
   color       String
   storage     String?
   productID   String      @db.Uuid
+  InvoiceProduct InvoiceProduct[]
   itemImages  ItemImage[]
   Product     Product     @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
 }
@@ -174,10 +176,6 @@ model User {
 }
 
 enum invoiceStatus {
-  new
-  shipping
-  done
-  abort
   NEW
   SHIPPING
   DONE
@@ -185,15 +183,12 @@ enum invoiceStatus {
 }
 
 enum paymentMethod {
-  cod
-  banking
   COD
   BANKING
+  NONE
 }
 
 enum userRoles {
   ADMIN
   CLIENT
-  admin
-  client
 }

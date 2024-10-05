@@ -1,12 +1,7 @@
 import config from "@/common/app-config";
 import {zaloPayConfig} from "@/common/payment-config";
 import {OrderRequest} from "@/common/schemas";
-import {
-    OrderProductInsertion,
-    ProductJoinWithItems,
-    UserDTO,
-    ZaloPaymentOrder,
-} from "@/common/types";
+import {ProductJoinWithItems, UserDTO, ZaloPaymentOrder} from "@/common/types";
 import {HmacSHA256} from "crypto-js";
 import moment from "moment";
 import userService from "./user-service";
@@ -57,30 +52,30 @@ const getZaloPayemtOrder = (validPayload: OrderRequest): ZaloPaymentOrder => {
     return order;
 };
 
-const createOrderProducts = (
-    products: ProductJoinWithItems[],
-    invoiceID: string
-): OrderProductInsertion[] => {
-    return products.reduce<OrderProductInsertion[]>((prev, curr) => {
-        curr.productItems.forEach((item) => {
-            prev.push({
-                discount: item.discount,
-                price: item.price,
-                productName: item.productCode,
-                quantity: item.quantity,
-                invoiceID: invoiceID,
-                productID: curr.productID,
-                productCode: item.productCode,
-                thump: item.thump,
-                color: item.color,
-                storage: item.storage,
-                categoryName: curr.category.categoryName,
-                providerName: curr.provider.providerName,
-            });
-        });
-        return prev;
-    }, []);
-};
+// const createOrderProducts = (
+//     products: ProductJoinWithItems[],
+//     invoiceID: string
+// ): OrderProductInsertion[] => {
+//     return products.reduce<OrderProductInsertion[]>((prev, curr) => {
+//         curr.productItems.forEach((item) => {
+//             prev.push({
+//                 discount: item.discount,
+//                 price: item.price,
+//                 productName: item.productCode,
+//                 quantity: item.quantity,
+//                 invoiceID: invoiceID,
+//                 productID: curr.productID,
+//                 productCode: item.productCode,
+//                 thump: item.thump,
+//                 color: item.color,
+//                 storage: item.storage,
+//                 categoryName: curr.category.categoryName,
+//                 providerName: curr.provider.providerName,
+//             });
+//         });
+//         return prev;
+//     }, []);
+// };
 
 const makeOrder = async (validPayload: OrderRequest, paymentID: string) => {
     const user: UserDTO = await userService.getUserDTOByID(validPayload.userID);
@@ -113,6 +108,7 @@ const makeOrder = async (validPayload: OrderRequest, paymentID: string) => {
                     note: validPayload.note,
                     paymentID: paymentID,
                     shippingFee: validPayload.shippingFee,
+                    shippingTime: validPayload.shippingTime,
                 },
                 select: {
                     invoiceID: true,
@@ -120,9 +116,9 @@ const makeOrder = async (validPayload: OrderRequest, paymentID: string) => {
             })
         ).invoiceID;
 
-        await prisma.invoiceProduct.createMany({
-            data: createOrderProducts(products, invoiceID),
-        });
+        // await prisma.invoiceProduct.createMany({
+        //     data: createOrderProducts(products, invoiceID),
+        // });
     });
 };
 

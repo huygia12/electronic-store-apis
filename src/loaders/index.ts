@@ -6,7 +6,7 @@ export default () => {
     const expressServer = new ExpressServer(config.SERVER_PORT);
     const socketServer = new SocketServer(
         expressServer.instance(),
-        config.CLIENT_ENDPOINT,
+        config.CLIENT_DOMAIN,
         {
             debug: true,
         }

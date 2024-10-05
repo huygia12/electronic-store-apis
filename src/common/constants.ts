@@ -26,6 +26,7 @@ enum ResponseMessage {
     REVIEW_NOT_FOUND = "Review not found!",
     POSITION_INVALID = "Position can only be left or right!",
     STORE_NOT_FOUND = "Store not found!",
+    PRODUCT_IN_ORDER_NOT_ENOUGH_QUANTITY = "Some products did not have enough quantity",
 }
 
 enum RequestMethod {

@@ -6,16 +6,17 @@ type Config = {
     AT_KEY: string;
     RT_KEY: string;
     APP_DOMAIN: string;
-    CLIENT_ENDPOINT: string;
+    PAYMENT_CALLBACK_URL: string;
+    CLIENT_DOMAIN: string;
 };
 
-const ENV_FILE_PATH: string = resolve(".env");
-const isEnvFound = dotenv.config({
-    path: ENV_FILE_PATH,
+const localhost = "http://localhost";
+const envConfig = dotenv.config({
+    path: resolve(".env") as string,
 });
 
-if (isEnvFound.error) {
-    console.info("[app-config]: Cannot find .env file");
+if (envConfig.error) {
+    console.error("[app-config]: Cannot find .env file");
 } else {
     console.info("[app-config]: Using .env file to load environment variables");
 }
@@ -23,15 +24,20 @@ if (isEnvFound.error) {
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
 process.env.PORT = process.env.PORT || "8000";
 
+if (!process.env.AT_SECRET_KEY || !process.env.RT_SECRET_KEY) {
+    throw new Error("[app-config]: secret key is required");
+} else if (!process.env.PAYMENT_CALLBACK_ENDPOINT) {
+    throw new Error("[app-config]: client payment callback url is required");
+}
+
 const config: Config = {
     SERVER_PORT: parseInt(process.env.PORT, 10),
-    AT_KEY: process.env.AT_SECRET_KEY || "",
-    RT_KEY: process.env.RT_SECRET_KEY || "",
-    APP_DOMAIN:
-        process.env.APP_DOMAIN || `http://localhost:${process.env.PORT}`,
-    CLIENT_ENDPOINT:
-        process.env.CLIENT_ENDPOINT ||
-        `http://localhost:${process.env.CLIENT_PORT}`,
+    AT_KEY: `${process.env.AT_SECRET_KEY}`,
+    RT_KEY: `${process.env.RT_SECRET_KEY}`,
+    APP_DOMAIN: process.env.APP_DOMAIN || `${localhost}:${process.env.PORT}`,
+    CLIENT_DOMAIN:
+        process.env.CLIENT_DOMAIN || `${localhost}:${process.env.CLIENT_PORT}`,
+    PAYMENT_CALLBACK_URL: `${process.env.APP_DOMAIN}${process.env.PAYMENT_CALLBACK_ENDPOINT}`,
 };
 
 export default config;

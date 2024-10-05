@@ -16,17 +16,13 @@ import type {
 import {ReviewCreationRequest} from "./schemas";
 import {SocketIOError} from "@/errors/custom-error";
 
+//Ultility type
 type Nullable<T> = T | null;
 
 type Optional<T> = T | undefined;
 
+//Attributes
 type Attribute = AttributeType & {attributeOptions: AttributeOption[]};
-
-type ProviderType = Provider & {productQuantity: number};
-
-type CategoryType = Category & {
-    productQuantity: number;
-};
 
 type AttributeOptionType = AttributeOption & {attributeType: AttributeType};
 
@@ -34,11 +30,24 @@ type ProductAttributeType = {
     attributeOption: AttributeOptionType;
 };
 
+//Provider
+type ProviderType = Provider & {productQuantity: number};
+
+//Category
+type CategoryType = Category & {
+    productQuantity: number;
+};
+
+//Product
 type ProductItemType = ProductItem & {itemImages: ItemImage[]};
 
 type ProductJoinWithItems = Product & {category: Category} & {
     provider: Provider;
 } & {productItems: ProductItem[]};
+
+type ItemDictionary = {
+    [itemID: string]: ProductWithSpecificItem;
+};
 
 type ProductSummary = Product & {
     category: Category;
@@ -57,21 +66,22 @@ interface ProductStatus {
     rating: number;
 }
 
-type OrderProductInsertion = {
+type ProductWithSpecificItem = {
     discount: Nullable<number>;
     price: number;
     productName: string;
     quantity: number;
-    invoiceID: string;
-    productID: string;
     productCode: string;
-    thump: Nullable<string>;
     color: string;
     storage: Nullable<string>;
     categoryName: string;
     providerName: string;
+    thump: Nullable<string>;
+    itemID: string;
+    productID: string;
 };
 
+//User
 interface UserDTO {
     userID: string;
     userName: string;
@@ -105,6 +115,7 @@ interface UserInTokenPayload {
     role: userRoles;
 }
 
+//Order
 interface ZaloPaymentOrder {
     app_id: number;
     app_trans_id: string;
@@ -124,6 +135,9 @@ interface ZaloPaymentResult {
     return_message: string;
 }
 
+type InvoiceFullJoin = Invoice & {invoiceProducts: InvoiceProduct[]};
+
+//Statistic
 interface Statistic {
     users: number;
     products: number;
@@ -137,8 +151,7 @@ interface Statistic {
     };
 }
 
-type InvoiceFullJoin = Invoice & {invoiceProducts: InvoiceProduct[]};
-
+//Review
 type ReviewFullJoin = Review & {
     childrenReview: (Review & {
         childrenReview: Review[];
@@ -161,8 +174,10 @@ type ReviewFullJoin = Review & {
     product: {productName: string};
 };
 
+//Store
 type StoreFullJoin = Store & {slideShows: SlideShow[]};
 
+//Events
 interface ClientEvents {
     "product:join": (payload: {productID: string}) => void;
     "product:leave": (payload: {productID: string}) => void;
@@ -196,11 +211,12 @@ export type {
     ProductStatus,
     ZaloPaymentOrder,
     ZaloPaymentResult,
-    OrderProductInsertion,
+    ProductWithSpecificItem,
     Statistic,
     InvoiceFullJoin,
     ClientEvents,
     ServerEvents,
     ReviewFullJoin,
     StoreFullJoin,
+    ItemDictionary,
 };

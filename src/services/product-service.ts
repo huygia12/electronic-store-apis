@@ -1,7 +1,12 @@
 import {ResponseMessage} from "@/common/constants";
 import prisma from "@/common/prisma-client";
-import {ProductItemRequest, ProductRequest} from "@/common/schemas";
 import {
+    OrderProductRequest,
+    ProductItemRequest,
+    ProductRequest,
+} from "@/common/schemas";
+import {
+    ItemDictionary,
     Nullable,
     ProductFullJoin,
     ProductJoinWithItems,
@@ -12,6 +17,7 @@ import ProductNotFoundError from "@/errors/product/product-not-found";
 import providerService from "./provider-service";
 import categoryService from "./category-service";
 import attributeService from "./attribute-service";
+import ProductInOrderNotEnoughQuantity from "@/errors/order/product-in-order-not-enough-quantity";
 
 const getItemImageInsertion = (
     productItems: ProductItemRequest[],
@@ -238,6 +244,62 @@ const deleteProduct = async (productID: string) => {
     });
 };
 
+const getValidProductsInOrder = async (
+    productsInOrder: OrderProductRequest[]
+): Promise<ItemDictionary> => {
+    //get products from database
+    const products = await getProductsWithSpecificItem(
+        productsInOrder.map((product) => {
+            return {
+                productID: product.productID,
+                itemID: product.itemID,
+            };
+        })
+    );
+
+    //make an dictionary out of the products data
+    const itemDictionary = products.reduce<ItemDictionary>((prev, curr) => {
+        curr.productItems.forEach((item) => {
+            prev[item.itemID] = {
+                discount: item.discount,
+                price: item.price,
+                productName: curr.productName,
+                quantity: item.quantity,
+                productCode: item.productCode,
+                color: item.color,
+                storage: item.storage,
+                categoryName: curr.category.categoryName,
+                providerName: curr.provider.providerName,
+                thump: item.thump,
+                itemID: item.itemID,
+                productID: curr.productID,
+            };
+        });
+        return prev;
+    }, {});
+
+    try {
+        // check if the quantity of each product is enough or not
+        productsInOrder.map((product) => {
+            if (itemDictionary[product.itemID].quantity < product.quantity) {
+                throw new ProductInOrderNotEnoughQuantity(
+                    ResponseMessage.PRODUCT_IN_ORDER_NOT_ENOUGH_QUANTITY
+                );
+            } else {
+                itemDictionary[product.itemID].quantity = product.quantity;
+            }
+        });
+
+        return itemDictionary;
+    } catch {
+        // Get in here if there is a product in order but not exist in database
+        console.debug(
+            `[product-service] checkIfProductsInOrder: product not found in dictionary`
+        );
+        throw new ProductNotFoundError(ResponseMessage.PRODUCT_NOT_FOUND);
+    }
+};
+
 const getProductsSummary = async (
     limit: number = 10,
     productName?: string
@@ -402,5 +464,6 @@ export default {
     getProductsFullJoinAfterFilter,
     getProductsWithSpecificItem,
     getNumberOfProducts,
+    getValidProductsInOrder,
     getStatus,
 };

@@ -29,19 +29,6 @@ database of your choice<br>
 
 ## ⇁ Setup
 
-first, clone this project<br>
-next, config git hooks<br>
-
-```shell
-git config core.hooksPath '.git-hooks'
-```
-
-verify right hook directory:
-
-```shell
-git rev-parse --git-path hooks
-```
-
 you need to have `.env` file in roor folder, in the file you
 need `key=value` each line.<br>
 
@@ -67,10 +54,29 @@ out [this document](https://docs.zalopay.vn/v2/general/overview.html#tao-don-han
 
 ## ⇁ Development
 
+first, clone this project<br>
+next, config git hooks<br>
+
+```shell
+git config core.hooksPath '.git-hooks'
+```
+
+verify right hook directory:
+
+```shell
+git rev-parse --git-path hooks
+```
+
 setup husky:
 
 ```shell
 npm run prepare
+```
+
+setup prisma:
+
+```shell
+npm run db-generate
 ```
 
 you can check the invalid code with this command:

@@ -1,6 +1,12 @@
 import prisma from "@/common/prisma-client";
-import {InvoiceFullJoin} from "@/common/types";
-import {invoiceStatus} from "@prisma/client";
+import {OrderProductRequest, OrderRequest} from "@/common/schemas";
+import {
+    InvoiceFullJoin,
+    ItemDictionary,
+    ProductWithSpecificItem,
+    UserDTO,
+} from "@/common/types";
+import {Invoice, invoiceStatus, paymentMethod} from "@prisma/client";
 
 const getNumberOfInvoicesByDay = async (
     date: Date = new Date()
@@ -67,6 +73,19 @@ const getInvoices = async (
     return invoices;
 };
 
+const getInvoice = async (invoiceID: string): Promise<InvoiceFullJoin[]> => {
+    const invoice: InvoiceFullJoin[] = await prisma.invoice.findMany({
+        where: {
+            invoiceID: invoiceID,
+        },
+        include: {
+            invoiceProducts: true,
+        },
+    });
+
+    return invoice;
+};
+
 const getRevenueByDay = async (date: Date): Promise<number> => {
     const invoices: InvoiceFullJoin[] = await getInvoicesBetweenDate(date);
     const revenue: number = invoices.reduce<number>((prev, curr) => {
@@ -104,4 +123,51 @@ const getRevenueInMonth = async (month: number): Promise<number> => {
     return revenue;
 };
 
-export default {getNumberOfInvoicesByDay, getRevenueByDay, getInvoices};
+const insertOrder = async (
+    validOrder: OrderRequest,
+    user: UserDTO,
+    validProductsInOrder: ProductWithSpecificItem[]
+): Promise<Invoice> => {
+    const invoice = await prisma.invoice.create({
+        data: {
+            ...validOrder,
+            status: invoiceStatus.NEW,
+            payment: paymentMethod.NONE,
+            userID: user.userID,
+            userName: user.userName,
+            invoiceProducts: {
+                createMany: {data: validProductsInOrder},
+            },
+        },
+    });
+
+    return invoice;
+};
+
+const getProductsInOrderToInsert = (
+    validProductsInOrder: OrderProductRequest[],
+    items: ItemDictionary
+): ProductWithSpecificItem[] => {
+    return validProductsInOrder.reduce<ProductWithSpecificItem[]>(
+        (prev, curr) => {
+            const item = items[curr.itemID];
+
+            if (item) {
+                prev.push({
+                    ...item,
+                });
+            }
+            return prev;
+        },
+        []
+    );
+};
+
+export default {
+    getNumberOfInvoicesByDay,
+    getRevenueByDay,
+    getInvoices,
+    insertOrder,
+    getProductsInOrderToInsert,
+    getInvoice,
+};

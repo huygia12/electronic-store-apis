@@ -118,6 +118,7 @@ const orderSchema = zod.object({
     userID: blankCheck(),
     note: z.string().optional(),
     shippingFee: z.number().optional(),
+    shippingTime: z.number().optional(),
     invoiceProducts: z
         .array(orderProductSchema)
         .refine((value) => value.length !== 0, {
