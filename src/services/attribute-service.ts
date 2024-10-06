@@ -21,6 +21,26 @@ const getAttributeTypeByID = async (
     return attributeType;
 };
 
+const getAttributeByID = async (typeID: string): Promise<Attribute> => {
+    const attribute: Attribute | null = await prisma.attributeType.findFirst({
+        where: {
+            typeID: typeID,
+        },
+        include: {
+            attributeOptions: true,
+        },
+    });
+
+    if (!attribute) {
+        console.debug(
+            `[attribute service]: Attribute type: ${typeID} not found`
+        );
+        throw new AttributeTypeNotFound(ResponseMessage.ATTR_TYPE_NOT_FOUND);
+    }
+
+    return attribute;
+};
+
 const getAttributeOptionByID = async (
     optionID: string
 ): Promise<Nullable<AttributeOption>> => {
@@ -62,7 +82,9 @@ const getAttributeOptionByValue = async (
     return attributeOption;
 };
 
-const insertAttributeType = async (validPayload: AttributeTypeRequest) => {
+const insertAttributeType = async (
+    validPayload: AttributeTypeRequest
+): Promise<string> => {
     const attributeTypeHolder: Nullable<AttributeType> =
         await getAttributeTypeByValue(validPayload.typeValue);
 
@@ -75,11 +97,16 @@ const insertAttributeType = async (validPayload: AttributeTypeRequest) => {
         );
     }
 
-    await prisma.attributeType.create({
+    const attributeType = await prisma.attributeType.create({
         data: {
             typeValue: validPayload.typeValue,
         },
+        select: {
+            typeID: true,
+        },
     });
+
+    return attributeType.typeID;
 };
 
 const updateAttributeType = async (
@@ -144,7 +171,7 @@ const deleteAttributeType = async (typeID: string) => {
 const insertAttributeOption = async (
     typeID: string,
     validPayload: AttributeOptionRequest
-) => {
+): Promise<AttributeOption> => {
     const attributeTypeHolder: Nullable<AttributeType> =
         await getAttributeTypeByID(typeID);
 
@@ -167,19 +194,21 @@ const insertAttributeOption = async (
         );
     }
 
-    await prisma.attributeOption.create({
+    const attributeOption = await prisma.attributeOption.create({
         data: {
             optionValue: validPayload.optionValue,
             typeID: typeID,
         },
     });
+
+    return attributeOption;
 };
 
 const updateAttributeOption = async (
     optionID: string,
     typeID: string,
     validPayload: AttributeOptionRequest
-) => {
+): Promise<AttributeOption> => {
     let attributeOptionHolder: Nullable<AttributeOption> =
         await getAttributeOptionByID(optionID);
 
@@ -205,7 +234,7 @@ const updateAttributeOption = async (
         );
     }
 
-    await prisma.attributeOption.update({
+    const attributeOption = await prisma.attributeOption.update({
         where: {
             optionID: optionID,
         },
@@ -213,6 +242,8 @@ const updateAttributeOption = async (
             optionValue: validPayload.optionValue,
         },
     });
+
+    return attributeOption;
 };
 
 const deleteAttributeOption = async (optionID: string, typeID: string) => {
@@ -275,6 +306,7 @@ const checkAttributeOptions = async (optionIDs: string[]): Promise<void> => {
 export default {
     checkAttributeOptions,
     getAttributes,
+    getAttributeByID,
     insertAttributeType,
     deleteAttributeType,
     updateAttributeType,
