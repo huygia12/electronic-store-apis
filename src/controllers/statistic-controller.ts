@@ -10,7 +10,9 @@ const getStatistic = async (req: Request, res: Response) => {
     yesterday.setDate(today.getDate() - 1);
 
     const nummberOfUsers: number = await userService.getNumberOfUsers();
-    const numberOfProducts: number = await productService.getNumberOfProducts();
+    const numberOfProducts: number = await productService.getNumberOfProducts(
+        {}
+    );
 
     const todayInvoices: number = await invoiceService.getNumberOfInvoicesByDay(
         today

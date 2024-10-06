@@ -339,9 +339,6 @@ const getUserResponseDTOs = async (date?: Date): Promise<UserResponseDTO[]> => {
                 gte: startOfDay,
                 lte: endOfDay,
             },
-            role: {
-                not: userRoles.ADMIN,
-            },
         },
         select: {
             userID: true,

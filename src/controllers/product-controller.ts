@@ -54,25 +54,40 @@ const getProduct = async (req: Request, res: Response) => {
 };
 
 const getProducts = async (req: Request, res: Response) => {
+    const searching = req.query.searching as string;
     const categoryID = req.query.categoryID as string;
     const providerID = req.query.providerID as string;
-    const productName = req.query.productName as string;
-    const limit = Number(req.query.limit) || 10;
+    const currentPage = Number(req.query.currentPage) || 1;
     const detail = Boolean(req.query.detail);
 
-    let payload = null;
+    let products;
     if (!detail) {
-        payload = await productService.getProductsSummary(limit, productName);
+        products = await productService.getProductsSummary({
+            categoryID: categoryID,
+            providerID: providerID,
+            searchingName: searching,
+            currentPage: currentPage,
+        });
     } else {
-        payload = await productService.getProductsFullJoinAfterFilter(
+        products = await productService.getProductsFullJoinAfterFilter(
             categoryID,
             providerID
         );
     }
+
+    const totalProducts = await productService.getNumberOfProducts({
+        categoryID: categoryID,
+        providerID: providerID,
+        searchingName: searching,
+    });
+
     console.debug(`[product controller]: get products successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
-        info: payload,
+        info: {
+            products: products,
+            totalProducts: totalProducts,
+        },
     });
 };
 

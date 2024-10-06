@@ -19,6 +19,8 @@ import categoryService from "./category-service";
 import attributeService from "./attribute-service";
 import ProductInOrderNotEnoughQuantity from "@/errors/order/product-in-order-not-enough-quantity";
 
+const productSizeLimit = 10;
+
 const getItemImageInsertion = (
     productItems: ProductItemRequest[],
     productItemIDs: string[]
@@ -300,14 +302,18 @@ const getValidProductsInOrder = async (
     }
 };
 
-const getProductsSummary = async (
-    limit: number = 10,
-    productName?: string
-): Promise<ProductSummary[]> => {
+const getProductsSummary = async (params: {
+    searchingName?: string;
+    providerID?: string;
+    categoryID?: string;
+    currentPage: number;
+}): Promise<ProductSummary[]> => {
     const products: ProductSummary[] = await prisma.product.findMany({
         where: {
+            categoryID: params.categoryID,
+            providerID: params.providerID,
             productName: {
-                contains: productName,
+                contains: params.searchingName,
             },
         },
         include: {
@@ -320,7 +326,8 @@ const getProductsSummary = async (
                 take: 1,
             },
         },
-        take: limit,
+        skip: (params.currentPage - 1) * productSizeLimit,
+        take: productSizeLimit,
     });
     return products;
 };
@@ -434,8 +441,20 @@ const getProductsWithSpecificItem = async (
     return productJoinWithItems;
 };
 
-const getNumberOfProducts = async (): Promise<number> => {
-    const quantity: number = await prisma.product.count();
+const getNumberOfProducts = async (params: {
+    searchingName?: string;
+    providerID?: string;
+    categoryID?: string;
+}): Promise<number> => {
+    const quantity: number = await prisma.product.count({
+        where: {
+            categoryID: params.categoryID,
+            providerID: params.providerID,
+            productName: {
+                contains: params.searchingName,
+            },
+        },
+    });
     return quantity;
 };
 
