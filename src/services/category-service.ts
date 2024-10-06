@@ -1,7 +1,7 @@
 import {ResponseMessage} from "@/common/constants";
 import prisma from "@/common/prisma-client";
 import {CategoryRequest} from "@/common/schemas";
-import {Nullable, CategoryType} from "@/common/types";
+import {Nullable, CategoryWithProductTotal} from "@/common/types";
 import CategoryAlreadyExistError from "@/errors/category/category-already-exist";
 import CategoryDeletingError from "@/errors/category/category-deleting-error";
 import CategoryNotFoundError from "@/errors/category/category-not-found";
@@ -19,7 +19,7 @@ const getCategoryByName = async (
     return category;
 };
 
-const getCategories = async (): Promise<CategoryType[]> => {
+const getCategories = async (): Promise<CategoryWithProductTotal[]> => {
     const rawData = await prisma.category.findMany({
         include: {
             _count: {
@@ -30,18 +30,23 @@ const getCategories = async (): Promise<CategoryType[]> => {
         },
     });
 
-    const categories = rawData.reduce<CategoryType[]>((prev, curr) => {
-        prev.push({
-            categoryID: curr.categoryID,
-            categoryName: curr.categoryName,
-            productQuantity: curr._count.products,
-        });
-        return prev;
-    }, []);
+    const categories = rawData.reduce<CategoryWithProductTotal[]>(
+        (prev, curr) => {
+            prev.push({
+                categoryID: curr.categoryID,
+                categoryName: curr.categoryName,
+                productQuantity: curr._count.products,
+            });
+            return prev;
+        },
+        []
+    );
     return categories;
 };
 
-const getCategoryByID = async (categoryID: string): Promise<CategoryType> => {
+const getCategoryByID = async (
+    categoryID: string
+): Promise<CategoryWithProductTotal> => {
     const categoryHolder = await prisma.category.findUnique({
         where: {categoryID: categoryID},
         include: {
@@ -67,7 +72,9 @@ const getCategoryByID = async (categoryID: string): Promise<CategoryType> => {
     };
 };
 
-const insertCategory = async (validPayload: CategoryRequest) => {
+const insertCategory = async (
+    validPayload: CategoryRequest
+): Promise<Category> => {
     const categoryHolder: Nullable<Category> = await getCategoryByName(
         validPayload.categoryName
     );
@@ -81,17 +88,19 @@ const insertCategory = async (validPayload: CategoryRequest) => {
         );
     }
 
-    await prisma.category.create({
+    const category = await prisma.category.create({
         data: {
             categoryName: validPayload.categoryName,
         },
     });
+
+    return category;
 };
 
 const updateCategory = async (
     categoryID: string,
     validPayload: CategoryRequest
-) => {
+): Promise<Category> => {
     const categoryHolder: Nullable<Category> = await getCategoryByName(
         validPayload.categoryName
     );
@@ -107,16 +116,20 @@ const updateCategory = async (
     //Check if category with provided id exists or not
     await getCategoryByID(categoryID);
 
-    await prisma.category.update({
+    const category = await prisma.category.update({
         where: {categoryID: categoryID},
         data: {
             categoryName: validPayload.categoryName,
         },
     });
+
+    return category;
 };
 
 const deleteCategory = async (categoryID: string) => {
-    const categoryHolder: CategoryType = await getCategoryByID(categoryID);
+    const categoryHolder: CategoryWithProductTotal = await getCategoryByID(
+        categoryID
+    );
 
     if (categoryHolder.productQuantity > 0) {
         console.debug(

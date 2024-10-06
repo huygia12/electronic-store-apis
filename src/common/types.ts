@@ -31,10 +31,10 @@ type ProductAttributeType = {
 };
 
 //Provider
-type ProviderType = Provider & {productQuantity: number};
+type ProviderWithProductTotal = Provider & {productQuantity: number};
 
 //Category
-type CategoryType = Category & {
+type CategoryWithProductTotal = Category & {
     productQuantity: number;
 };
 
@@ -200,8 +200,8 @@ export type {
     Nullable,
     Optional,
     Attribute,
-    ProviderType,
-    CategoryType,
+    ProviderWithProductTotal,
+    CategoryWithProductTotal,
     UserDTO,
     UserInTokenPayload,
     UserResponseDTO,
