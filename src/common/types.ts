@@ -189,11 +189,16 @@ interface ClientEvents {
         payload: {reviewID: string},
         callback: (status: Optional<SocketIOError>) => void
     ) => void;
+    "user:ban": (
+        payload: {userID: string; banned: boolean},
+        callback: (error: Optional<SocketIOError>) => void
+    ) => void;
 }
 
 interface ServerEvents {
     "review:create": (payload: {review: ReviewFullJoin}) => void;
     "review:delete": (payload: {review: Review}) => void;
+    "user:ban": (payload: {userID: string}) => void;
 }
 
 export type {

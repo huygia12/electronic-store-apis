@@ -16,6 +16,9 @@ import WrongPasswordError from "@/errors/user/wrong-password";
 import jwtService from "./jwt-service";
 import ms from "ms";
 import {Response} from "express";
+import UserIsBanned from "@/errors/user/user-is-banned";
+
+const userSizeLimit = 10;
 
 const getUserByEmail = async (email: string): Promise<Nullable<User>> => {
     const user: Nullable<User> = await prisma.user.findFirst({
@@ -133,6 +136,10 @@ const login = async (
         validPayload.password
     );
 
+    if (validUser.isBanned) {
+        throw new UserIsBanned(ResponseMessage.USER_IS_BANNED);
+    }
+
     const userInPayLoad: UserInTokenPayload = {
         userID: validUser.userID,
         userName: validUser.userName,
@@ -207,7 +214,7 @@ const refreshToken = async (res: Response, userID: string): Promise<string> => {
 
 const insertUser = async (
     validPayload: SignupRequest
-): Promise<{userID: string}> => {
+): Promise<UserResponseDTO> => {
     const userHolder: Nullable<User> = await getUserByEmail(validPayload.email);
 
     if (userHolder) {
@@ -217,7 +224,7 @@ const insertUser = async (
         throw new UserAlreadyExistError(ResponseMessage.USER_ALREADY_EXISTS);
     }
 
-    const userID = await prisma.user.create({
+    const user = await prisma.user.create({
         data: {
             userName: validPayload.userName,
             email: validPayload.email,
@@ -229,9 +236,17 @@ const insertUser = async (
         },
         select: {
             userID: true,
+            userName: true,
+            email: true,
+            phoneNumber: true,
+            avatar: true,
+            isBanned: true,
+            role: true,
+            createdAt: true,
+            updateAt: true,
         },
     });
-    return userID;
+    return user;
 };
 
 const updateUserInfo = async (
@@ -262,6 +277,7 @@ const updateUserInfo = async (
             email: validPayload.email,
             phoneNumber: validPayload.phoneNumber,
             avatar: validPayload.avatar,
+            isBanned: validPayload.isBanned,
             updateAt: new Date(),
         },
         select: {
@@ -328,9 +344,15 @@ const clearUserRefreshTokenUsed = async (userID: string) => {
     });
 };
 
-const getUserResponseDTOs = async (date?: Date): Promise<UserResponseDTO[]> => {
-    const startOfDay = date && new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = date && new Date(date.setHours(23, 59, 59, 999));
+const getUserResponseDTOs = async (params: {
+    date?: Date;
+    searching?: string;
+    currentPage: number;
+}): Promise<UserResponseDTO[]> => {
+    const startOfDay =
+        params.date && new Date(params.date.setHours(0, 0, 0, 0));
+    const endOfDay =
+        params.date && new Date(params.date.setHours(23, 59, 59, 999));
 
     const users: UserResponseDTO[] = await prisma.user.findMany({
         where: {
@@ -338,6 +360,9 @@ const getUserResponseDTOs = async (date?: Date): Promise<UserResponseDTO[]> => {
             createdAt: {
                 gte: startOfDay,
                 lte: endOfDay,
+            },
+            userName: {
+                contains: params.searching,
             },
         },
         select: {
@@ -351,6 +376,8 @@ const getUserResponseDTOs = async (date?: Date): Promise<UserResponseDTO[]> => {
             createdAt: true,
             updateAt: true,
         },
+        skip: (params.currentPage - 1) * userSizeLimit,
+        take: userSizeLimit,
     });
 
     return users;
@@ -383,10 +410,24 @@ const checkIfRefreshTokenExistInDB = async (
     return user !== null;
 };
 
-const getNumberOfUsers = async (): Promise<number> => {
+const getNumberOfUsers = async (params: {
+    date?: Date;
+    searching?: string;
+}): Promise<number> => {
+    const startOfDay =
+        params.date && new Date(params.date.setHours(0, 0, 0, 0));
+    const endOfDay =
+        params.date && new Date(params.date.setHours(23, 59, 59, 999));
     const quantity: number = await prisma.user.count({
         where: {
             deletedAt: null,
+            createdAt: {
+                gte: startOfDay,
+                lte: endOfDay,
+            },
+            userName: {
+                contains: params.searching,
+            },
         },
     });
     return quantity;

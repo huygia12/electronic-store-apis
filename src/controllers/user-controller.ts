@@ -3,19 +3,29 @@ import {StatusCodes} from "http-status-codes";
 import jwtService from "../services/jwt-service";
 import userService from "../services/user-service";
 import {TokenExpiredError} from "jsonwebtoken";
-import {LoginRequest, SignupRequest, UserUpdateRequest} from "@/common/schemas";
 import {
+    LoginRequest,
+    SignupRequest,
+    UserBanningRequest,
+    UserUpdateRequest,
+} from "@/common/schemas";
+import {
+    ClientEvents,
     Nullable,
     Optional,
+    ServerEvents,
     UserDTO,
     UserInTokenPayload,
     UserResponseDTO,
 } from "@/common/types";
-import {AuthToken, ResponseMessage} from "@/common/constants";
+import {AuthToken, ResponseMessage, UserRole} from "@/common/constants";
 import UserNotFoundError from "@/errors/user/user-not-found";
 import UserAlreadyLoginError from "@/errors/user/user-already-login";
 import InvalidTokenError from "@/errors/auth/invalid-token";
 import MissingTokenError from "@/errors/auth/missing-token";
+import UserCannotBeDeleted from "@/errors/user/user-cannot-be-deleted";
+import {Namespace, Server, Socket} from "socket.io";
+import {socketIOSchemaValidator} from "@/middleware/schema-validator";
 
 /**
  * Make user registration
@@ -27,16 +37,16 @@ import MissingTokenError from "@/errors/auth/missing-token";
  * @param {NextFunction} next
  */
 const signup = async (req: Request, res: Response) => {
-    const userSignupReq: SignupRequest = req.body;
+    const userSignupReq = req.body as SignupRequest;
 
-    const userID = await userService.insertUser(userSignupReq);
+    const user = await userService.insertUser(userSignupReq);
 
     console.debug(
         `[user controller]: Signup: user with email ${userSignupReq.email} has been signup successfull`
     );
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
-        info: userID,
+        info: user,
     });
 };
 
@@ -50,7 +60,7 @@ const signup = async (req: Request, res: Response) => {
  * @param {NextFunction} next
  */
 const login = async (req: Request, res: Response) => {
-    const loginReq: LoginRequest = req.body;
+    const loginReq = req.body as LoginRequest;
 
     //If both token are verified and refresh token is stored in DB, then will not create new token
     try {
@@ -139,7 +149,7 @@ const login = async (req: Request, res: Response) => {
  * @returns
  */
 const logout = async (req: Request, res: Response) => {
-    const refreshTokenFromCookie: Optional<string> = req.cookies.refreshToken;
+    const refreshTokenFromCookie = req.cookies.refreshToken as string;
 
     if (refreshTokenFromCookie) {
         const user = jwtService.decodeToken(
@@ -166,7 +176,7 @@ const logout = async (req: Request, res: Response) => {
  * @param {Response} res
  */
 const refreshToken = async (req: Request, res: Response) => {
-    const refreshTokenFromCookie: Optional<string> = req.cookies.refreshToken;
+    const refreshTokenFromCookie = req.cookies.refreshToken as string;
 
     if (!refreshTokenFromCookie) {
         console.debug(
@@ -228,7 +238,7 @@ const refreshToken = async (req: Request, res: Response) => {
  */
 const updateInfo = async (req: Request, res: Response) => {
     const userID = req.params.id as string;
-    const userUpdateReq: UserUpdateRequest = req.body;
+    const userUpdateReq = req.body as UserUpdateRequest;
 
     const updatedUser: UserResponseDTO = await userService.updateUserInfo(
         userID,
@@ -256,25 +266,47 @@ const getUser = async (req: Request, res: Response) => {
 };
 
 const getUsers = async (req: Request, res: Response) => {
-    const recently = Boolean(req.query.recently as string);
+    const recently = Boolean(req.query.recently);
+    const searching = req.query.searching as string;
+    const currentPage = Number(req.query.currentPage) || 1;
     let date: Optional<Date>;
 
     if (recently) {
         date = new Date();
     }
-    const users: UserResponseDTO[] = await userService.getUserResponseDTOs(
-        date
-    );
+
+    const users: UserResponseDTO[] = await userService.getUserResponseDTOs({
+        date: date,
+        searching: searching,
+        currentPage: currentPage,
+    });
+
+    const totalUsers = await userService.getNumberOfUsers({
+        date: date,
+        searching: searching,
+    });
 
     console.debug(`[user controller]: get users successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
-        info: users,
+        info: {
+            users: users,
+            totalUsers: totalUsers,
+        },
     });
 };
 
 const deleteUser = async (req: Request, res: Response) => {
     const userID = req.params.id as string;
+
+    const user = await userService.getUserDTOByID(userID);
+
+    if (user.role === UserRole.ADMIN) {
+        console.debug(
+            `[user controller]: delete user ${user.userID} fail : admin cannot be deleted`
+        );
+        throw new UserCannotBeDeleted(ResponseMessage.ADMIN_CANNOT_BE_DELETED);
+    }
 
     await userService.deleteUserByID(userID);
 
@@ -282,6 +314,51 @@ const deleteUser = async (req: Request, res: Response) => {
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
     });
+};
+
+const registerUserSocketHandlers = (
+    io: Server<ClientEvents, ServerEvents>,
+    socket: Socket<ClientEvents, ServerEvents>
+) => {
+    const banUser = async (payload: UserBanningRequest, callback: unknown) => {
+        if (typeof callback !== "function") {
+            //not an acknowledgement
+            return socket.disconnect();
+        }
+        const validateResult: boolean = socketIOSchemaValidator(
+            `user:ban`,
+            payload,
+            callback
+        );
+        if (!validateResult) return;
+
+        try {
+            await userService.updateUserInfo(payload.userID, {
+                isBanned: payload.banned,
+            });
+
+            io.emit("user:ban", {
+                userID: payload.userID,
+            });
+            callback(undefined);
+            console.debug(
+                `[user controller] ban user=${payload.banned} : succeed`
+            );
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error(`[error handler] ${error.name} : ${error.stack}`);
+            } else {
+                console.error(`[error handler] unexpected error : ${error}`);
+            }
+
+            callback({
+                status: StatusCodes.INTERNAL_SERVER_ERROR,
+                message: ResponseMessage.UNEXPECTED_ERROR,
+            });
+        }
+    };
+
+    socket.on(`user:ban`, banUser);
 };
 
 export default {
@@ -293,4 +370,5 @@ export default {
     getUser,
     getUsers,
     deleteUser,
+    registerUserSocketHandlers,
 };

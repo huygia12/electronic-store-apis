@@ -4,7 +4,7 @@ import {
     ReviewFullJoin,
     ServerEvents,
 } from "@/common/types";
-import {Namespace, Server, Socket} from "socket.io";
+import {Server, Socket} from "socket.io";
 import reviewService from "@/services/review-service";
 import {ResponseMessage} from "@/common/constants";
 import {StatusCodes} from "http-status-codes";
@@ -27,7 +27,7 @@ const getReviews = async (req: Request, res: Response) => {
 };
 
 const registerReviewSocketHandlers = (
-    nameSpace: Namespace,
+    io: Server<ClientEvents, ServerEvents>,
     socket: Socket<ClientEvents, ServerEvents>
 ) => {
     const createReview = async (
@@ -50,7 +50,7 @@ const registerReviewSocketHandlers = (
                 payload
             );
 
-            nameSpace.to(`product:${payload.productID}`).emit("review:create", {
+            io.to(`product:${payload.productID}`).emit("review:create", {
                 review: review,
             });
             callback(undefined);
@@ -99,7 +99,7 @@ const registerReviewSocketHandlers = (
 
             await reviewService.deleteReview(payload);
 
-            nameSpace.to(`product:${review.productID}`).emit("review:delete", {
+            io.to(`product:${review.productID}`).emit("review:delete", {
                 review: review,
             });
             callback(undefined);

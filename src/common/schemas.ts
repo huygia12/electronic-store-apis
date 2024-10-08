@@ -56,7 +56,7 @@ const userUpdateSchema = zod
         userName: blankCheck().optional(),
         phoneNumber: blankCheck().optional(),
         avatar: blankCheck().optional(),
-        isBanned: blankCheck().optional(),
+        isBanned: zod.boolean().optional(),
     })
     .strict();
 
@@ -157,6 +157,11 @@ const storeUpdateSchema = zod.object({
     email: zod.string().nullable(),
 });
 
+const banUserSchema = zod.object({
+    userID: blankCheck(),
+    banned: zod.boolean(),
+});
+
 export type AttributeTypeRequest = z.infer<typeof attributeTypeSchema>;
 
 export type AttributeOptionRequest = z.infer<typeof attributeOptionSchema>;
@@ -170,6 +175,8 @@ export type SignupRequest = z.infer<typeof signupSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
 
 export type UserUpdateRequest = z.infer<typeof userUpdateSchema>;
+
+export type UserBanningRequest = z.infer<typeof banUserSchema>;
 
 export type ProductRequest = z.infer<typeof productSchema>;
 
@@ -242,5 +249,8 @@ export default {
     ["review"]: {
         ["create"]: reviewCreationSchema,
         ["delete"]: reviewDeletionSchema,
+    },
+    ["user"]: {
+        ["ban"]: banUserSchema,
     },
 } as {[key: string]: {[method: string]: ZodSchema}};

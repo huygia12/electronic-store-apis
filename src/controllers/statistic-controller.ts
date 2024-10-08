@@ -9,7 +9,7 @@ const getStatistic = async (req: Request, res: Response) => {
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
-    const nummberOfUsers: number = await userService.getNumberOfUsers();
+    const nummberOfUsers: number = await userService.getNumberOfUsers({});
     const numberOfProducts: number = await productService.getNumberOfProducts(
         {}
     );

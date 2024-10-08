@@ -27,6 +27,8 @@ enum ResponseMessage {
     POSITION_INVALID = "Position can only be left or right!",
     STORE_NOT_FOUND = "Store not found!",
     PRODUCT_IN_ORDER_NOT_ENOUGH_QUANTITY = "Some products did not have enough quantity",
+    ADMIN_CANNOT_BE_DELETED = "Admin can't be deleted",
+    USER_IS_BANNED = "User is already banned",
 }
 
 enum RequestMethod {
@@ -47,20 +49,8 @@ enum AuthToken {
     AC = "accessToken",
 }
 
-enum SocketNamespace {
-    COMMENT = "/comment",
-    NOTIFICATION = "/notification",
-}
-
 enum Payment {
     PAYMENT_RESULT = "payment:result",
 }
 
-export {
-    ResponseMessage,
-    RequestMethod,
-    AuthToken,
-    UserRole,
-    SocketNamespace,
-    Payment,
-};
+export {ResponseMessage, RequestMethod, AuthToken, UserRole, Payment};

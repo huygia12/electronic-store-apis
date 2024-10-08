@@ -1,19 +1,17 @@
-import {Namespace, Server} from "socket.io";
+import {Server} from "socket.io";
 import {Server as ExpressServer} from "node:http";
-import {SocketNamespace} from "@/common/constants";
 import {instrument} from "@socket.io/admin-ui";
 import reviewController from "@/controllers/review-controller";
 import productController from "@/controllers/product-controller";
 import {ClientEvents, ServerEvents} from "@/common/types";
+import userController from "@/controllers/user-controller";
 interface Option {
     debug: boolean;
 }
 
 class SocketServer {
-    private _io: Server;
+    private _io: Server<ClientEvents, ServerEvents>;
     private _debug: boolean;
-    private _commentNamespace: Namespace;
-    private _notificationNamespace: Namespace;
 
     public constructor(
         expressServer: ExpressServer,
@@ -32,7 +30,6 @@ class SocketServer {
         instrument(this._io, {
             auth: false,
             mode: "development",
-            namespaceName: SocketNamespace.COMMENT,
         });
 
         this.listen();
@@ -40,32 +37,25 @@ class SocketServer {
 
     private listen(): void {
         // this._io.use((socket, next) => {
-
         //     const token: string = socket.handshake.auth["token"];
         //     authMiddleware.checkAuth(token);
         //     next();
         // });
-        this._commentNamespace = this._io
-            .of(SocketNamespace.COMMENT)
-            .on(`connection`, (socket) => {
-                this.debug(`An user with socket ID of ${socket.id} connected`);
+        this._io.on(`connection`, (socket) => {
+            this.debug(`An user with socket ID of ${socket.id} connected`);
 
-                reviewController.registerReviewSocketHandlers(
-                    this._commentNamespace,
-                    socket
+            reviewController.registerReviewSocketHandlers(this._io, socket);
+
+            productController.registerProductSocketHandlers(this._io, socket);
+
+            userController.registerUserSocketHandlers(this._io, socket);
+
+            socket.on(`disconnect`, () => {
+                this.debug(
+                    `An user with socket ID of ${socket.id} disconnected`
                 );
-
-                productController.registerProductSocketHandlers(
-                    this._commentNamespace,
-                    socket
-                );
-
-                socket.on(`disconnect`, () => {
-                    this.debug(
-                        `An user with socket ID of ${socket.id} disconnected`
-                    );
-                });
             });
+        });
 
         console.log("[socket server]: Server is listening");
     }

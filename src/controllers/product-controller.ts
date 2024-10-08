@@ -4,7 +4,7 @@ import productService from "../services/product-service";
 import {ClientEvents, ProductFullJoin, ServerEvents} from "@/common/types";
 import {ProductRequest} from "@/common/schemas";
 import {ResponseMessage} from "@/common/constants";
-import {Namespace, Socket} from "socket.io";
+import {Namespace, Server, Socket} from "socket.io";
 
 const createProduct = async (req: Request, res: Response) => {
     const productCreateReq = req.body as ProductRequest;
@@ -92,7 +92,7 @@ const getProducts = async (req: Request, res: Response) => {
 };
 
 const registerProductSocketHandlers = (
-    nameSpace: Namespace,
+    io: Server<ClientEvents, ServerEvents>,
     socket: Socket<ClientEvents, ServerEvents>
 ) => {
     socket.on(`product:join`, (payload) => {
