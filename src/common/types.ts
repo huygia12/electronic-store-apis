@@ -138,17 +138,10 @@ interface ZaloPaymentResult {
 type InvoiceFullJoin = Invoice & {invoiceProducts: InvoiceProduct[]};
 
 //Statistic
-interface Statistic {
-    users: number;
-    products: number;
-    invoices: {
-        today: number;
-        yesterday: number;
-    };
-    revenue: {
-        today: number;
-        yesterday: number;
-    };
+interface InvoiceStatistic {
+    date: Date;
+    order: number;
+    revenue: number;
 }
 
 //Review
@@ -217,7 +210,7 @@ export type {
     ZaloPaymentOrder,
     ZaloPaymentResult,
     ProductWithSpecificItem,
-    Statistic,
+    InvoiceStatistic,
     InvoiceFullJoin,
     ClientEvents,
     ServerEvents,
