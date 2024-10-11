@@ -108,6 +108,12 @@ const orderProductSchema = zod.object({
     quantity: zod.number(),
 });
 
+const orderUpdateSchema = zod.object({
+    status: zod.string().optional(),
+    paymentID: zod.string().optional(),
+    payment: zod.string().optional(),
+});
+
 const orderSchema = zod.object({
     district: blankCheck(),
     ward: blankCheck(),
@@ -194,6 +200,8 @@ export type SlideUpdateRequest = z.infer<typeof slideUpdateSchema>;
 
 export type BannerUpdateRequest = z.infer<typeof bannerUpdateSchema>;
 
+export type OrderUpdateRequest = z.infer<typeof orderUpdateSchema>;
+
 export default {
     ["/attributes"]: {
         [RequestMethod.POST]: attributeTypeSchema,
@@ -236,6 +244,9 @@ export default {
     },
     ["/invoices"]: {
         [RequestMethod.POST]: orderSchema,
+    },
+    ["/invoices/:id"]: {
+        [RequestMethod.PATCH]: orderUpdateSchema,
     },
     ["/stores/:id/slides"]: {
         [RequestMethod.PATCH]: slideUpdateSchema,

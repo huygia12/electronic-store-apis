@@ -1,14 +1,21 @@
 import prisma from "@/common/prisma-client";
-import {OrderProductRequest, OrderRequest} from "@/common/schemas";
+import {
+    OrderProductRequest,
+    OrderRequest,
+    OrderUpdateRequest,
+} from "@/common/schemas";
 import {
     InvoiceFullJoin,
     InvoiceStatistic,
     ItemDictionary,
+    Nullable,
     ProductWithSpecificItem,
     UserDTO,
 } from "@/common/types";
 import {Invoice, invoiceStatus, paymentMethod} from "@prisma/client";
 import {format} from "date-fns";
+
+const invoiceSizeLimit = 10;
 
 const getNumberOfInvoicesByDay = async (
     date: Date = new Date()
@@ -28,25 +35,29 @@ const getNumberOfInvoicesByDay = async (
 };
 
 const getNumberOfInvoices = async (params: {
-    status: invoiceStatus;
-    from: Date;
+    status?: invoiceStatus;
+    from?: Date;
     to?: Date;
     userName?: string;
 }): Promise<number> => {
-    const startOfDay = new Date(params.from.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(
-        (params.to || new Date()).setHours(23, 59, 59, 999)
-    );
-    const invoices: number = await prisma.invoice.count({
+    const startOfDay =
+        params.from && new Date(params.from.setHours(0, 0, 0, 0));
+    const endOfDay = params.to && new Date(params.to.setHours(23, 59, 59, 999));
+
+    const amountOfInvoice: number = await prisma.invoice.count({
         where: {
+            status: params.status,
             createdAt: {
                 gte: startOfDay,
                 lte: endOfDay,
             },
+            userName: {
+                contains: params.userName,
+            },
         },
     });
 
-    return invoices;
+    return amountOfInvoice;
 };
 
 const getInvoicesBetweenDate = async (
@@ -73,32 +84,42 @@ const getInvoicesBetweenDate = async (
     return invoices;
 };
 
-const getInvoices = async (
-    date?: Date,
-    status?: invoiceStatus,
-    limit: number = 20
-): Promise<InvoiceFullJoin[]> => {
-    const startOfDay = date && new Date(date.setHours(0, 0, 0, 0));
-    const endOfDay = date && new Date(date.setHours(23, 59, 59, 999));
+const getInvoices = async (params: {
+    date?: Date;
+    status?: invoiceStatus;
+    userName?: string;
+    currentPage: number;
+}): Promise<InvoiceFullJoin[]> => {
+    const beginOfDay =
+        params.date && new Date(params.date.setHours(0, 0, 0, 0));
+    const endOfDay =
+        params.date && new Date(params.date.setHours(23, 59, 59, 999));
+
     const invoices: InvoiceFullJoin[] = await prisma.invoice.findMany({
         where: {
-            status: status,
+            userName: {
+                contains: params.userName,
+            },
+            status: params.status,
             createdAt: {
-                gte: startOfDay,
+                gte: beginOfDay,
                 lte: endOfDay,
             },
         },
-        take: limit,
         include: {
             invoiceProducts: true,
         },
+        skip: (params.currentPage - 1) * invoiceSizeLimit,
+        take: invoiceSizeLimit,
     });
 
     return invoices;
 };
 
-const getInvoice = async (invoiceID: string): Promise<InvoiceFullJoin[]> => {
-    const invoice: InvoiceFullJoin[] = await prisma.invoice.findMany({
+const getInvoice = async (
+    invoiceID: string
+): Promise<Nullable<InvoiceFullJoin>> => {
+    const invoice: Nullable<InvoiceFullJoin> = await prisma.invoice.findFirst({
         where: {
             invoiceID: invoiceID,
         },
@@ -134,7 +155,7 @@ const getInvoiceStatisticOfEachDayInMonth = async (
 
     const statistic: InvoiceStatistic[] = await prisma.$queryRaw`
         SELECT
-            DATE_TRUNC('day', i."createdAt") as "date",
+            DATE_TRUNC('day', i."doneAt") as "date",
             CAST(COUNT(i."invoiceID") AS INTEGER) as "order",
             SUM(p."price"*p."quantity"*(1-p."discount"/100)) as "revenue"
         FROM
@@ -144,7 +165,7 @@ const getInvoiceStatisticOfEachDayInMonth = async (
         ON
             i."invoiceID" = p."invoiceID"
         WHERE
-            DATE_TRUNC('month', i."createdAt") = ${format(
+            DATE_TRUNC('month', i."doneAt") = ${format(
                 firstDayOfMonth,
                 "yyyy-MM-dd"
             )}::timestamp
@@ -154,6 +175,8 @@ const getInvoiceStatisticOfEachDayInMonth = async (
         ORDER BY
             "date" ASC
     `;
+
+    console.log(statistic);
 
     return statistic;
 };
@@ -198,6 +221,34 @@ const getProductsInOrderToInsert = (
     );
 };
 
+const updateInvoice = async (
+    invoiceID: string,
+    validPayload: OrderUpdateRequest
+): Promise<InvoiceFullJoin> => {
+    const invoice = await prisma.invoice.update({
+        where: {
+            invoiceID: invoiceID,
+        },
+        data: {
+            status: validPayload.status
+                ? (validPayload.status as invoiceStatus)
+                : undefined,
+            paymentID: validPayload.paymentID,
+            payment: validPayload.payment
+                ? (validPayload.payment as paymentMethod)
+                : undefined,
+            doneAt:
+                validPayload.status === invoiceStatus.DONE
+                    ? new Date()
+                    : undefined,
+        },
+        include: {
+            invoiceProducts: true,
+        },
+    });
+
+    return invoice;
+};
 export default {
     getNumberOfInvoicesByDay,
     getRevenueByDay,
@@ -207,4 +258,5 @@ export default {
     getInvoice,
     getNumberOfInvoices,
     getInvoiceStatisticOfEachDayInMonth,
+    updateInvoice,
 };

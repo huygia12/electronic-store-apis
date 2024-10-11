@@ -26,6 +26,7 @@ enum ResponseMessage {
     REVIEW_NOT_FOUND = "Review not found!",
     POSITION_INVALID = "Position can only be left or right!",
     STORE_NOT_FOUND = "Store not found!",
+    INVOICE_NOT_FOUND = "Invoice not found!",
     PRODUCT_IN_ORDER_NOT_ENOUGH_QUANTITY = "Some products did not have enough quantity",
     ADMIN_CANNOT_BE_DELETED = "Admin can't be deleted",
     USER_IS_BANNED = "User is already banned",

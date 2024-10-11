@@ -1,6 +1,6 @@
 import {compareSync, hashSync} from "bcrypt";
 import {LoginRequest, SignupRequest, UserUpdateRequest} from "@/common/schemas";
-import {type User, userRoles} from "@prisma/client";
+import {type User, userRole} from "@prisma/client";
 import prisma from "@/common/prisma-client";
 import {
     Nullable,
@@ -231,7 +231,7 @@ const insertUser = async (
             password: hashSync(validPayload.password, 10),
             avatar: validPayload.avatar || null,
             phoneNumber: validPayload.phoneNumber || null,
-            role: userRoles.CLIENT,
+            role: userRole.CLIENT,
             refreshTokensUsed: [],
         },
         select: {

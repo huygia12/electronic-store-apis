@@ -44,6 +44,7 @@ model Invoice {
   paymentID       String?
   shippingFee     Float?
   shippingTime    Int?             @default(0)
+  doneAt          DateTime?        @db.Timestamp(6)
   User            User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
   invoiceProducts InvoiceProduct[]
 }
@@ -166,7 +167,7 @@ model User {
   phoneNumber       String?   @db.VarChar(10)
   avatar            String?
   isBanned          Boolean   @default(false)
-  role              userRoles @default(CLIENT)
+  role              userRole  @default(CLIENT)
   refreshTokensUsed String[]  @map("refreshTokenUsed")
   createdAt         DateTime  @default(now()) @db.Timestamptz(6)
   updateAt          DateTime  @default(now()) @db.Timestamptz(6)
@@ -177,19 +178,19 @@ model User {
 
 enum invoiceStatus {
   NEW
+  PAYMENT_WAITING
   SHIPPING
   DONE
   ABORT
-  PAYMENT_WAITING
 }
 
 enum paymentMethod {
-  COD
+  CODE
   BANKING
   NONE
 }
 
-enum userRoles {
+enum userRole {
   ADMIN
   CLIENT
 }

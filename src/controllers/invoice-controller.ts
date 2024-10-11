@@ -6,39 +6,66 @@ import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 import {ResponseMessage} from "@/common/constants";
 import {zaloPayConfig} from "@/common/payment-config";
-import {OrderRequest} from "@/common/schemas";
+import {OrderRequest, OrderUpdateRequest} from "@/common/schemas";
 import {ZaloPaymentResult} from "@/common/types";
 import {HmacSHA256} from "crypto-js";
 import productService from "@/services/product-service";
 import userService from "@/services/user-service";
+import InvoiceNotFound from "@/errors/order/order-not-found";
 
 const getInvoices = async (req: Request, res: Response) => {
     const statusParam = req.query.status as string;
     const dateParam = req.query.date as string;
-    const limit = parseInt(req.query.limit as string, 10) || undefined;
-    let status;
+    const userName = req.query.searching as string;
+    const currentPage = Number(req.query.currentPage) || 1;
+
     let date;
 
     if (isValidDate(dateParam)) {
         date = new Date(dateParam);
     }
 
-    Array(invoiceStatus).map((iter) => {
-        if (`${iter}`.toUpperCase() === statusParam) {
-            status = iter;
-        }
+    const invoices: InvoiceFullJoin[] = await invoiceService.getInvoices({
+        date: date,
+        status: statusParam as invoiceStatus,
+        userName: userName,
+        currentPage: currentPage,
     });
 
-    console.debug(`[invoice controller]: getInvoices: ${limit}`);
-    const invoices: InvoiceFullJoin[] = await invoiceService.getInvoices(
-        date,
-        status,
-        limit
-    );
+    const totalInvoices = await invoiceService.getNumberOfInvoices({
+        from: date,
+        to: date,
+        status: statusParam as invoiceStatus,
+        userName: userName,
+    });
 
     console.debug(`[invoice controller]: getInvoices: succeed `);
     res.status(StatusCodes.OK).json({
-        info: invoices,
+        info: {
+            invoices: invoices,
+            totalInvoices: totalInvoices,
+        },
+    });
+};
+
+const updateInvoice = async (req: Request, res: Response) => {
+    const invoiceID = req.params.id as string;
+    let payload = req.body as OrderUpdateRequest;
+
+    let invoice = await invoiceService.getInvoice(invoiceID);
+
+    if (!invoice) {
+        console.debug(
+            "[invoice controller] updateInvoice : failed to find invoice"
+        );
+        throw new InvoiceNotFound(ResponseMessage.INVOICE_NOT_FOUND);
+    }
+
+    invoice = await invoiceService.updateInvoice(invoiceID, payload);
+
+    console.debug(`[invoice controller]: getInvoices: succeed `);
+    res.status(StatusCodes.OK).json({
+        info: invoice,
     });
 };
 
@@ -61,6 +88,13 @@ const createNewOrder = async (req: Request, res: Response) => {
         validProductsInOrder
     );
     const payload = await invoiceService.getInvoice(invoice.invoiceID);
+
+    if (!payload) {
+        console.debug(
+            "[invoice controller] createnewOrder : failed to get invoice after insert"
+        );
+        throw new InvoiceNotFound(ResponseMessage.INVOICE_NOT_FOUND);
+    }
 
     return res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
@@ -131,4 +165,10 @@ const acceptPayment = async (req: Request, res: Response) => {
     return res.json(result);
 };
 
-export default {getInvoices, createNewOrder, makePayment, acceptPayment};
+export default {
+    getInvoices,
+    createNewOrder,
+    makePayment,
+    acceptPayment,
+    updateInvoice,
+};

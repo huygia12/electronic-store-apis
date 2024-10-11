@@ -13,9 +13,15 @@ router.post(
     invoiceController.createNewOrder
 );
 router.patch(
-    "/:id",
+    "/:id/payment",
     authMiddleware.isAuthorized,
     invoiceController.makePayment
+);
+router.patch(
+    "/:id",
+    authMiddleware.isAuthorized,
+    expressSchemaValidator("/invoices/:id"),
+    invoiceController.updateInvoice
 );
 router.post("/callback", invoiceController.acceptPayment);
 

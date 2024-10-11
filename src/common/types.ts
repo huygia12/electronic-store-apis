@@ -11,7 +11,7 @@ import type {
     Review,
     SlideShow,
     Store,
-    userRoles,
+    userRole,
 } from "@prisma/client";
 import {ReviewCreationRequest} from "./schemas";
 import {SocketIOError} from "@/errors/custom-error";
@@ -89,7 +89,7 @@ interface UserDTO {
     phoneNumber: Nullable<string>;
     avatar: Nullable<string>;
     isBanned: Nullable<boolean>;
-    role: userRoles;
+    role: userRole;
     createdAt: Date;
     updateAt: Date;
     refreshTokensUsed: string[];
@@ -102,7 +102,7 @@ interface UserResponseDTO {
     phoneNumber: Nullable<string>;
     avatar: Nullable<string>;
     isBanned: Nullable<boolean>;
-    role: userRoles;
+    role: userRole;
     createdAt: Date;
     updateAt: Date;
 }
@@ -112,7 +112,7 @@ interface UserInTokenPayload {
     userName: string;
     email: string;
     avatar: Nullable<string>;
-    role: userRoles;
+    role: userRole;
 }
 
 //Order
@@ -152,7 +152,7 @@ type ReviewFullJoin = Review & {
             userID: string;
             userName: string;
             avatar: Nullable<string>;
-            role: userRoles;
+            role: userRole;
             createdAt: Date;
         };
         product: {productName: string};
@@ -161,7 +161,7 @@ type ReviewFullJoin = Review & {
         userID: string;
         userName: string;
         avatar: Nullable<string>;
-        role: userRoles;
+        role: userRole;
         createdAt: Date;
     };
     product: {productName: string};

@@ -37,11 +37,10 @@ const getStatistic = async (req: Request, res: Response) => {
         currentPage: 1,
     });
 
-    const orders: InvoiceFullJoin[] = await invoiceService.getInvoices(
-        new Date(),
-        invoiceStatus.NEW,
-        5
-    );
+    const orders: InvoiceFullJoin[] = await invoiceService.getInvoices({
+        status: invoiceStatus.NEW,
+        currentPage: 1,
+    });
 
     console.debug(`[statistic controller]: getStatistic: succeed `);
     res.status(StatusCodes.OK).json({
