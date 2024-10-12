@@ -127,9 +127,8 @@ const updateCategory = async (
 };
 
 const deleteCategory = async (categoryID: string) => {
-    const categoryHolder: CategoryWithProductTotal = await getCategoryByID(
-        categoryID
-    );
+    const categoryHolder: CategoryWithProductTotal =
+        await getCategoryByID(categoryID);
 
     if (categoryHolder.productQuantity > 0) {
         console.debug(

@@ -127,9 +127,8 @@ const updateProvider = async (
 };
 
 const deleteProvider = async (providerID: string) => {
-    const providerHolder: ProviderWithProductTotal = await getProviderByID(
-        providerID
-    );
+    const providerHolder: ProviderWithProductTotal =
+        await getProviderByID(providerID);
 
     if (providerHolder.productQuantity > 0) {
         console.debug(

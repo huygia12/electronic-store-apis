@@ -24,7 +24,7 @@ import UserAlreadyLoginError from "@/errors/user/user-already-login";
 import InvalidTokenError from "@/errors/auth/invalid-token";
 import MissingTokenError from "@/errors/auth/missing-token";
 import UserCannotBeDeleted from "@/errors/user/user-cannot-be-deleted";
-import {Namespace, Server, Socket} from "socket.io";
+import {Server, Socket} from "socket.io";
 import {socketIOSchemaValidator} from "@/middleware/schema-validator";
 
 /**

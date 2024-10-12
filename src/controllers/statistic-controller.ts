@@ -25,9 +25,8 @@ const getStatistic = async (req: Request, res: Response) => {
         await invoiceService.getNumberOfInvoicesByDay(yesterday);
 
     const todayRevenue: number = await invoiceService.getRevenueByDay(today);
-    const yesterdayRevenue: number = await invoiceService.getRevenueByDay(
-        yesterday
-    );
+    const yesterdayRevenue: number =
+        await invoiceService.getRevenueByDay(yesterday);
 
     const invoiceStatistic =
         await invoiceService.getInvoiceStatisticOfEachDayInMonth();

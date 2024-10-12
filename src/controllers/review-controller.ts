@@ -15,9 +15,8 @@ import {Review} from "@prisma/client";
 
 const getReviews = async (req: Request, res: Response) => {
     const productID = req.query.productID as string;
-    const reviews: ReviewFullJoin[] = await reviewService.getReviewsByProductID(
-        productID
-    );
+    const reviews: ReviewFullJoin[] =
+        await reviewService.getReviewsByProductID(productID);
 
     console.debug(`[review controller] getReviewsByProductID : successfully`);
     res.status(StatusCodes.OK).json({
@@ -46,9 +45,8 @@ const registerReviewSocketHandlers = (
         if (!validateResult) return;
 
         try {
-            const review: ReviewFullJoin = await reviewService.makeReview(
-                payload
-            );
+            const review: ReviewFullJoin =
+                await reviewService.makeReview(payload);
 
             io.to(`product:${payload.productID}`).emit("review:create", {
                 review: review,
