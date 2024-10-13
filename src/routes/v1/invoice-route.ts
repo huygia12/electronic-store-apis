@@ -5,6 +5,7 @@ import {expressSchemaValidator} from "@/middleware/schema-validator";
 
 const router = express.Router();
 
+router.get("/:id", invoiceController.getInvoice);
 router.get("/", authMiddleware.isAuthorized, invoiceController.getInvoices);
 router.post(
     "/",

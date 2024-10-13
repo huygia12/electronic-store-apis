@@ -38,6 +38,8 @@ const getNumberOfInvoices = async (params: {
     status?: invoiceStatus;
     from?: Date;
     to?: Date;
+    userID?: string;
+    invoiceID?: string;
     userName?: string;
 }): Promise<number> => {
     const startOfDay =
@@ -46,7 +48,9 @@ const getNumberOfInvoices = async (params: {
 
     const amountOfInvoice: number = await prisma.invoice.count({
         where: {
+            userID: params.userID,
             status: params.status,
+            invoiceID: params.invoiceID,
             createdAt: {
                 gte: startOfDay,
                 lte: endOfDay,
@@ -88,6 +92,8 @@ const getInvoices = async (params: {
     date?: Date;
     status?: invoiceStatus;
     userName?: string;
+    userID?: string;
+    invoiceID?: string;
     currentPage: number;
 }): Promise<InvoiceFullJoin[]> => {
     const beginOfDay =
@@ -97,9 +103,11 @@ const getInvoices = async (params: {
 
     const invoices: InvoiceFullJoin[] = await prisma.invoice.findMany({
         where: {
+            userID: params.userID,
             userName: {
                 contains: params.userName,
             },
+            invoiceID: params.invoiceID,
             status: params.status,
             createdAt: {
                 gte: beginOfDay,
@@ -247,7 +255,35 @@ const updateInvoice = async (
 
     return invoice;
 };
+
+const getProductsOutOfInvoice = (
+    invoice: InvoiceFullJoin
+): OrderProductRequest[] => {
+    return invoice.invoiceProducts.map((product) => {
+        return {
+            itemID: product.itemID,
+            productID: product.productID,
+            quantity: product.quantity,
+        };
+    });
+};
+
+const checkIfOrderTurnIntoInvoice = (
+    prevStatus: invoiceStatus,
+    newStatus: invoiceStatus
+): boolean => {
+    return (
+        [`${invoiceStatus.PAYMENT_WAITING}`, `${invoiceStatus.NEW}`].includes(
+            prevStatus
+        ) &&
+        [`${invoiceStatus.SHIPPING}`, `${invoiceStatus.DONE}`].includes(
+            newStatus
+        )
+    );
+};
+
 export default {
+    getProductsOutOfInvoice,
     getNumberOfInvoicesByDay,
     getRevenueByDay,
     getInvoices,
@@ -257,4 +293,5 @@ export default {
     getNumberOfInvoices,
     getInvoiceStatisticOfEachDayInMonth,
     updateInvoice,
+    checkIfOrderTurnIntoInvoice,
 };

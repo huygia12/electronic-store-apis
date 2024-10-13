@@ -1,7 +1,7 @@
 import isValidDate from "@/common/helper";
-import {InvoiceFullJoin, UserDTO} from "@/common/types";
+import {InvoiceFullJoin, UserDTO, ZaloPaymentOrder} from "@/common/types";
 import invoiceService from "@/services/invoice-service";
-import {invoiceStatus} from "@prisma/client";
+import {invoiceStatus, paymentMethod} from "@prisma/client";
 import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 import {ResponseMessage} from "@/common/constants";
@@ -12,12 +12,36 @@ import {HmacSHA256} from "crypto-js";
 import productService from "@/services/product-service";
 import userService from "@/services/user-service";
 import InvoiceNotFound from "@/errors/order/order-not-found";
+import axios from "axios";
+import paymentService from "@/services/payment-service";
+
+const getInvoice = async (req: Request, res: Response) => {
+    const invoiceID = req.params.id as string;
+
+    const invoice = await invoiceService.getInvoice(invoiceID);
+
+    if (!invoice) {
+        console.debug(
+            `[invoice controller]: getInvoice with id ${invoiceID}: not found `
+        );
+        throw new InvoiceNotFound(invoiceID);
+    }
+
+    console.debug(
+        `[invoice controller]: getInvoice with id ${invoiceID}: succeed `
+    );
+    res.status(StatusCodes.OK).json({
+        info: invoice,
+    });
+};
 
 const getInvoices = async (req: Request, res: Response) => {
     const statusParam = req.query.status as string;
     const dateParam = req.query.date as string;
     const userName = req.query.searching as string;
     const currentPage = Number(req.query.currentPage) || 1;
+    const userID = req.query.userID as string;
+    const invoiceID = req.query.invoiceID as string;
 
     let date;
 
@@ -29,6 +53,8 @@ const getInvoices = async (req: Request, res: Response) => {
         date: date,
         status: statusParam as invoiceStatus,
         userName: userName,
+        userID: userID,
+        invoiceID: invoiceID,
         currentPage: currentPage,
     });
 
@@ -36,6 +62,7 @@ const getInvoices = async (req: Request, res: Response) => {
         from: date,
         to: date,
         status: statusParam as invoiceStatus,
+        invoiceID: invoiceID,
         userName: userName,
     });
 
@@ -61,11 +88,40 @@ const updateInvoice = async (req: Request, res: Response) => {
         throw new InvoiceNotFound(ResponseMessage.INVOICE_NOT_FOUND);
     }
 
-    invoice = await invoiceService.updateInvoice(invoiceID, payload);
+    const updatedInvoice = await invoiceService.updateInvoice(
+        invoiceID,
+        payload
+    );
+
+    if (payload.status) {
+        if (
+            invoiceService.checkIfOrderTurnIntoInvoice(
+                invoice.status,
+                updatedInvoice.status
+            )
+        ) {
+            const invoice = await invoiceService.getInvoice(invoiceID);
+            if (!invoice) {
+                console.debug(
+                    `[invoice controller]: getInvoice with id ${invoiceID}: not found `
+                );
+                throw new InvoiceNotFound(invoiceID);
+            }
+
+            //check if products in invoice still valid
+            const productsInInvoice =
+                invoiceService.getProductsOutOfInvoice(invoice);
+            const itemDictionary =
+                await productService.getValidProductsInOrder(productsInInvoice);
+
+            //decrease items quantity
+            await productService.decearseItemsQuantity(itemDictionary);
+        }
+    }
 
     console.debug(`[invoice controller]: getInvoices: succeed `);
     res.status(StatusCodes.OK).json({
-        info: invoice,
+        info: updatedInvoice,
     });
 };
 
@@ -103,22 +159,34 @@ const createNewOrder = async (req: Request, res: Response) => {
 };
 
 const makePayment = async (req: Request, res: Response) => {
-    //TODO: check if the orderProducts still valid, update the order state, decrease the number of productItems
-    const orderID = req.params.id as string;
+    const invoiceID = req.params.id as string;
 
-    // await productService.checkIfProductsInOrderValid(order.invoiceProducts);
+    const invoice = await invoiceService.getInvoice(invoiceID);
+    if (!invoice) {
+        console.debug(
+            `[invoice controller]: getInvoice with id ${invoiceID}: not found `
+        );
+        throw new InvoiceNotFound(invoiceID);
+    }
 
-    // const paymentOrder: ZaloPaymentOrder =
-    //     await paymentService.getZaloPayemtOrder(orderID);
+    //check if products in invoice still valid
+    const productsInInvoice = invoiceService.getProductsOutOfInvoice(invoice);
+    await productService.getValidProductsInOrder(productsInInvoice);
 
-    // const zaloResponse = await axios.post(zaloPayConfig.endpoint, null, {
-    //     params: paymentOrder,
-    // });
+    // create zalo paymenturl
+    const paymentOrder: ZaloPaymentOrder = paymentService.getZaloPayemtOrder(
+        invoiceID,
+        invoice.userID
+    );
 
-    // return res.status(StatusCodes.OK).json({
-    //     message: ResponseMessage.SUCCESS,
-    //     info: zaloResponse.data,
-    // });
+    const zaloResponse = await axios.post(zaloPayConfig.endpoint, null, {
+        params: paymentOrder,
+    });
+
+    return res.status(StatusCodes.OK).json({
+        message: ResponseMessage.SUCCESS,
+        info: zaloResponse.data.order_url,
+    });
 };
 
 const acceptPayment = async (req: Request, res: Response) => {
@@ -142,10 +210,34 @@ const acceptPayment = async (req: Request, res: Response) => {
             result.return_code = 1;
             result.return_message = "success";
 
-            // TODO: add order to DB
-            let dataJson = JSON.parse(rawData);
+            // Main payment logic
+            const dataJson = JSON.parse(rawData);
+            const invoiceID = JSON.parse(dataJson.item)[0] as string;
+            const paymentID = dataJson.app_trans_id as string;
 
-            console.log(JSON.stringify(dataJson, null, 2));
+            const invoice = await invoiceService.getInvoice(invoiceID);
+            if (!invoice) {
+                console.debug(
+                    `[invoice controller]: getInvoice with id ${invoiceID}: not found `
+                );
+                throw new InvoiceNotFound(invoiceID);
+            }
+
+            //check if products in invoice still valid
+            const productsInInvoice =
+                invoiceService.getProductsOutOfInvoice(invoice);
+            const itemDictionary =
+                await productService.getValidProductsInOrder(productsInInvoice);
+
+            //update invoice
+            await invoiceService.updateInvoice(invoiceID, {
+                status: invoiceStatus.SHIPPING,
+                payment: paymentMethod.BANKING,
+                paymentID: paymentID,
+            });
+
+            //decrease items quantity
+            await productService.decearseItemsQuantity(itemDictionary);
         }
     } catch (error) {
         console.debug(
@@ -171,4 +263,5 @@ export default {
     makePayment,
     acceptPayment,
     updateInvoice,
+    getInvoice,
 };

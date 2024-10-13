@@ -474,6 +474,24 @@ const getStatus = async (productID: string): Promise<ProductStatus> => {
     };
 };
 
+const decearseItemsQuantity = async (items: ItemDictionary) => {
+    const itemKeys = Object.keys(items);
+    const updateOperations = itemKeys.map((itemID) => {
+        return prisma.productItem.update({
+            where: {
+                itemID: itemID,
+            },
+            data: {
+                quantity: {
+                    decrement: items[itemID].quantity,
+                },
+            },
+        });
+    });
+
+    await prisma.$transaction(updateOperations);
+};
+
 export default {
     createProduct,
     updateProduct,
@@ -485,4 +503,5 @@ export default {
     getNumberOfProducts,
     getValidProductsInOrder,
     getStatus,
+    decearseItemsQuantity,
 };
