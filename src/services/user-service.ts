@@ -1,5 +1,10 @@
 import {compareSync, hashSync} from "bcrypt";
-import {LoginRequest, SignupRequest, UserUpdateRequest} from "@/common/schemas";
+import {
+    LoginRequest,
+    PasswordUpdateRequest,
+    SignupRequest,
+    UserUpdateRequest,
+} from "@/common/schemas";
 import {type User, userRole} from "@prisma/client";
 import prisma from "@/common/prisma-client";
 import {
@@ -18,6 +23,7 @@ import ms from "ms";
 import {Response} from "express";
 import UserIsBanned from "@/errors/user/user-is-banned";
 
+const saltOfRound = 10;
 const userSizeLimit = 10;
 
 const getUserByEmail = async (email: string): Promise<Nullable<User>> => {
@@ -228,7 +234,7 @@ const insertUser = async (
         data: {
             userName: validPayload.userName,
             email: validPayload.email,
-            password: hashSync(validPayload.password, 10),
+            password: hashSync(validPayload.password, saltOfRound),
             avatar: validPayload.avatar || null,
             phoneNumber: validPayload.phoneNumber || null,
             role: userRole.CLIENT,
@@ -433,6 +439,25 @@ const getNumberOfUsers = async (params: {
     return quantity;
 };
 
+const updatePassword = async (
+    email: string,
+    validPayload: PasswordUpdateRequest
+) => {
+    const validUser: UserDTO = await getValidUserDTO(
+        email,
+        validPayload.oldPassword
+    );
+
+    await prisma.user.update({
+        where: {
+            userID: validUser.userID,
+        },
+        data: {
+            password: hashSync(validPayload.newPassword, saltOfRound),
+        },
+    });
+};
+
 export default {
     getUserResponseByID,
     insertUser,
@@ -447,4 +472,5 @@ export default {
     checkIfRefreshTokenExistInDB,
     deleteUserByID,
     getNumberOfUsers,
+    updatePassword,
 };

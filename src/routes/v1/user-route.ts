@@ -26,6 +26,12 @@ router.put(
     expressSchemaValidator("/users/:id"),
     userController.updateInfo
 );
+router.patch(
+    "/:id",
+    authMiddleware.isAuthorized,
+    expressSchemaValidator("/users/:id/password"),
+    userController.updateUserPassword
+);
 router.delete("/:id", authMiddleware.isAuthorized, userController.deleteUser);
 router.get("/:id", authMiddleware.isAuthorized, userController.getUser);
 router.get(

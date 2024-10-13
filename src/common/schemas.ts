@@ -60,6 +60,13 @@ const userUpdateSchema = zod
     })
     .strict();
 
+const passwordUpdateSchema = zod
+    .object({
+        oldPassword: blankCheck(),
+        newPassword: blankCheck(),
+    })
+    .strict();
+
 const productItemSchema = zod
     .object({
         thump: blankCheck(),
@@ -182,6 +189,8 @@ export type LoginRequest = z.infer<typeof loginSchema>;
 
 export type UserUpdateRequest = z.infer<typeof userUpdateSchema>;
 
+export type PasswordUpdateRequest = z.infer<typeof passwordUpdateSchema>;
+
 export type UserBanningRequest = z.infer<typeof banUserSchema>;
 
 export type ProductRequest = z.infer<typeof productSchema>;
@@ -235,6 +244,9 @@ export default {
     },
     ["/users/:id"]: {
         [RequestMethod.PUT]: userUpdateSchema,
+    },
+    ["/users/:id/password"]: {
+        [RequestMethod.PATCH]: passwordUpdateSchema,
     },
     ["/products"]: {
         [RequestMethod.POST]: productSchema,

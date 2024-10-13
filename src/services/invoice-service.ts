@@ -176,8 +176,6 @@ const getInvoiceStatisticOfEachDayInMonth = async (
             "date" ASC
     `;
 
-    console.log(statistic);
-
     return statistic;
 };
 

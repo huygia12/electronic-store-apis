@@ -5,6 +5,7 @@ import userService from "../services/user-service";
 import {TokenExpiredError} from "jsonwebtoken";
 import {
     LoginRequest,
+    PasswordUpdateRequest,
     SignupRequest,
     UserBanningRequest,
     UserUpdateRequest,
@@ -316,6 +317,20 @@ const deleteUser = async (req: Request, res: Response) => {
     });
 };
 
+const updateUserPassword = async (req: Request, res: Response) => {
+    const userID = req.params.id as string;
+    const payload = req.body as PasswordUpdateRequest;
+
+    const user = await userService.getUserDTOByID(userID);
+
+    await userService.updatePassword(user.email, payload);
+
+    console.debug(`[user controller]: update user password succeed`);
+    res.status(StatusCodes.OK).json({
+        message: ResponseMessage.SUCCESS,
+    });
+};
+
 const registerUserSocketHandlers = (
     io: Server<ClientEvents, ServerEvents>,
     socket: Socket<ClientEvents, ServerEvents>
@@ -371,4 +386,5 @@ export default {
     getUsers,
     deleteUser,
     registerUserSocketHandlers,
+    updateUserPassword,
 };
