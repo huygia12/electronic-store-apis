@@ -99,7 +99,22 @@ const deleteAttributeType = async (req: Request, res: Response) => {
 };
 
 const getAttributes = async (req: Request, res: Response) => {
-    const attributes: Attribute[] = await attributeService.getAttributes();
+    const providerID = req.query.providerID as string;
+    const categoryID = req.query.categoryID as string;
+
+    console.log("cate ", categoryID);
+
+    let optionIDs: string[] = [];
+    if (categoryID || providerID) {
+        optionIDs = await attributeService.getProductAttributesAfterFilter({
+            providerID: providerID,
+            categoryID: categoryID,
+        });
+    }
+
+    const attributes: Attribute[] = await attributeService.getAttributes(
+        optionIDs.length === 0 ? undefined : optionIDs
+    );
 
     console.debug(`[attribute controller]: get attributes successfull`);
     res.status(StatusCodes.OK).json({

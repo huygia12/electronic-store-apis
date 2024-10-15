@@ -4,7 +4,7 @@ import productService from "../services/product-service";
 import {ClientEvents, ProductFullJoin, ServerEvents} from "@/common/types";
 import {ProductRequest} from "@/common/schemas";
 import {ResponseMessage} from "@/common/constants";
-import {Namespace, Server, Socket} from "socket.io";
+import {Server, Socket} from "socket.io";
 
 const createProduct = async (req: Request, res: Response) => {
     const productCreateReq = req.body as ProductRequest;
@@ -57,10 +57,13 @@ const getProducts = async (req: Request, res: Response) => {
     const searching = req.query.searching as string;
     const categoryID = req.query.categoryID as string;
     const providerID = req.query.providerID as string;
+    const exceptID = req.query.exceptID as string;
     const currentPage = Number(req.query.currentPage) || 1;
+    const take = Number(req.query.take);
+    const sale = Boolean(req.query.sale);
     const detail = Boolean(req.query.detail);
-
     let products;
+
     if (!detail) {
         products = await productService.getProductsSummary({
             categoryID: categoryID,
@@ -69,16 +72,21 @@ const getProducts = async (req: Request, res: Response) => {
             currentPage: currentPage,
         });
     } else {
-        products = await productService.getProductsFullJoinAfterFilter(
-            categoryID,
-            providerID
-        );
+        products = await productService.getProductsFullJoinAfterFilter({
+            categoryID: categoryID,
+            providerID: providerID,
+            sale: sale,
+            currentPage: currentPage,
+            exceptID: exceptID,
+            limit: take,
+        });
     }
 
     const totalProducts = await productService.getNumberOfProducts({
         categoryID: categoryID,
         providerID: providerID,
         searchingName: searching,
+        exceptID: exceptID,
     });
 
     console.debug(`[product controller]: get products successfull`);

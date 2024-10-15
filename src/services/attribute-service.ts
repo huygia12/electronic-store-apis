@@ -276,16 +276,6 @@ const deleteAttributeOption = async (optionID: string, typeID: string) => {
     await prisma.$transaction([deleteProductAttribute, deletAttributeOption]);
 };
 
-const getAttributes = async (): Promise<Attribute[]> => {
-    const attributes: Attribute[] = await prisma.attributeType.findMany({
-        include: {
-            attributeOptions: true,
-        },
-    });
-
-    return attributes;
-};
-
 const checkAttributeOptions = async (optionIDs: string[]): Promise<void> => {
     const attributeOptions: AttributeOption[] =
         await prisma.attributeOption.findMany({
@@ -303,6 +293,39 @@ const checkAttributeOptions = async (optionIDs: string[]): Promise<void> => {
     }
 };
 
+const getProductAttributesAfterFilter = async (params: {
+    categoryID?: string;
+    providerID?: string;
+}): Promise<string[]> => {
+    const productAttributes = await prisma.productAttribute.findMany({
+        distinct: ["optionID"],
+        where: {
+            Product: {
+                categoryID: params.categoryID,
+                providerID: params.providerID,
+            },
+        },
+    });
+
+    return productAttributes.map((e) => e.optionID);
+};
+
+const getAttributes = async (optionIDs?: string[]): Promise<Attribute[]> => {
+    const attributes: Attribute[] = await prisma.attributeType.findMany({
+        include: {
+            attributeOptions: {
+                where: {
+                    optionID: {
+                        in: optionIDs,
+                    },
+                },
+            },
+        },
+    });
+
+    return attributes;
+};
+
 export default {
     checkAttributeOptions,
     getAttributes,
@@ -313,4 +336,5 @@ export default {
     insertAttributeOption,
     deleteAttributeOption,
     updateAttributeOption,
+    getProductAttributesAfterFilter,
 };

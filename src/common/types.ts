@@ -52,7 +52,7 @@ type ItemDictionary = {
 type ProductSummary = Product & {
     category: Category;
     provider: Provider;
-    productItems: {thump: string}[];
+    productItems: {thump: string; price: number; discount: number | null}[];
 };
 
 type ProductFullJoin = Product & {

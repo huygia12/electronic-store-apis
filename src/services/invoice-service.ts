@@ -57,6 +57,7 @@ const getNumberOfInvoices = async (params: {
             },
             userName: {
                 contains: params.userName,
+                mode: "insensitive",
             },
         },
     });
@@ -106,6 +107,7 @@ const getInvoices = async (params: {
             userID: params.userID,
             userName: {
                 contains: params.userName,
+                mode: "insensitive",
             },
             invoiceID: params.invoiceID,
             status: params.status,

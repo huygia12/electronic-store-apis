@@ -314,6 +314,7 @@ const getProductsSummary = async (params: {
             providerID: params.providerID,
             productName: {
                 contains: params.searchingName,
+                mode: "insensitive",
             },
         },
         include: {
@@ -322,6 +323,8 @@ const getProductsSummary = async (params: {
             productItems: {
                 select: {
                     thump: true,
+                    price: true,
+                    discount: true,
                 },
                 take: 1,
             },
@@ -369,38 +372,54 @@ const getProductFullJoinWithID = async (
     return product;
 };
 
-const getProductsFullJoinAfterFilter = async (
-    categoryID?: string,
-    providerID?: string,
-    limit: number = 10
-): Promise<ProductFullJoin[]> => {
-    const products: Nullable<ProductFullJoin[]> = await prisma.product.findMany(
-        {
-            where: {
-                categoryID: categoryID,
-                providerID: providerID,
+const getProductsFullJoinAfterFilter = async (params: {
+    categoryID?: string;
+    providerID?: string;
+    sale?: boolean;
+    limit?: number;
+    exceptID?: string;
+    currentPage: number;
+}): Promise<ProductFullJoin[]> => {
+    const products: ProductFullJoin[] = await prisma.product.findMany({
+        where: {
+            categoryID: params.categoryID,
+            providerID: params.providerID,
+            productItems: {
+                some: {
+                    discount: {
+                        gte: params.sale ? 1 : 0,
+                    },
+                },
             },
-            take: limit,
-            include: {
-                category: true,
-                provider: true,
-                productAttributes: {
-                    include: {
-                        attributeOption: {
-                            include: {
-                                attributeType: true,
-                            },
+            productID: {
+                not: params.exceptID,
+            },
+        },
+        include: {
+            category: true,
+            provider: true,
+            productAttributes: {
+                include: {
+                    attributeOption: {
+                        include: {
+                            attributeType: true,
                         },
                     },
                 },
-                productItems: {
-                    include: {
-                        itemImages: true,
-                    },
-                },
             },
-        }
-    );
+            productItems: {
+                include: {
+                    itemImages: true,
+                },
+                orderBy: {
+                    discount: params.sale ? "desc" : undefined,
+                },
+                take: 1,
+            },
+        },
+        take: params.limit || productSizeLimit,
+        skip: (params.currentPage - 1) * (params.limit || productSizeLimit),
+    });
 
     return products;
 };
@@ -445,13 +464,25 @@ const getNumberOfProducts = async (params: {
     searchingName?: string;
     providerID?: string;
     categoryID?: string;
+    exceptID?: string;
+    sale?: boolean;
 }): Promise<number> => {
     const quantity: number = await prisma.product.count({
         where: {
             categoryID: params.categoryID,
             providerID: params.providerID,
+            productID: {
+                not: params.exceptID,
+            },
             productName: {
                 contains: params.searchingName,
+            },
+            productItems: {
+                some: {
+                    discount: {
+                        gte: params.sale ? 1 : 0,
+                    },
+                },
             },
         },
     });

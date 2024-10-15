@@ -369,6 +369,7 @@ const getUserResponseDTOs = async (params: {
             },
             userName: {
                 contains: params.searching,
+                mode: "insensitive",
             },
         },
         select: {
@@ -433,6 +434,7 @@ const getNumberOfUsers = async (params: {
             },
             userName: {
                 contains: params.searching,
+                mode: "insensitive",
             },
         },
     });
