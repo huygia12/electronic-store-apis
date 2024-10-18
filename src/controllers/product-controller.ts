@@ -3,7 +3,7 @@ import {StatusCodes} from "http-status-codes";
 import productService from "../services/product-service";
 import {ClientEvents, ProductFullJoin, ServerEvents} from "@/common/types";
 import {ProductRequest} from "@/common/schemas";
-import {ResponseMessage} from "@/common/constants";
+import {ResponseMessage, Sort} from "@/common/constants";
 import {Server, Socket} from "socket.io";
 
 const createProduct = async (req: Request, res: Response) => {
@@ -59,11 +59,20 @@ const getProducts = async (req: Request, res: Response) => {
     const providerID = req.query.providerID as string;
     const exceptID = req.query.exceptID as string;
     const currentPage = Number(req.query.currentPage) || 1;
-    const take = Number(req.query.take);
+    const limit = Number(req.query.limit);
     const sale = Boolean(req.query.sale);
     const detail = Boolean(req.query.detail);
+    const sortByPrice = req.query.sortByPrice as Sort;
+    const sortByName = req.query.sortByname as Sort;
+    const optionsString = req.query.optionIDs as string;
+    const minPrice = Number(req.query.minPrice) || 100000;
+    const maxPrice = Number(req.query.maxPrice) || 100000000;
     let products;
 
+    let optionIDs: string[] | undefined;
+    if (optionsString) {
+        optionIDs = optionsString.split(",");
+    }
     if (!detail) {
         products = await productService.getProductsSummary({
             categoryID: categoryID,
@@ -72,19 +81,29 @@ const getProducts = async (req: Request, res: Response) => {
             currentPage: currentPage,
         });
     } else {
-        products = await productService.getProductsFullJoinAfterFilter({
+        products = await productService.getProductFullJoinList({
             categoryID: categoryID,
             providerID: providerID,
             sale: sale,
-            currentPage: currentPage,
+            limit: limit,
+            sortByPrice: sortByPrice,
+            sortByName: sortByName,
             exceptID: exceptID,
-            limit: take,
+            maxPrice: maxPrice,
+            minPrice: minPrice,
+            optionIDs: optionIDs,
+            currentPage: currentPage,
         });
     }
 
-    const totalProducts = await productService.getNumberOfProducts({
+    let totalProducts = await productService.getNumberOfProducts({
         categoryID: categoryID,
         providerID: providerID,
+        sale: sale,
+        limit: limit,
+        maxPrice: maxPrice,
+        minPrice: minPrice,
+        optionIDs: optionIDs,
         searchingName: searching,
         exceptID: exceptID,
     });

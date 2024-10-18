@@ -15,9 +15,10 @@ const getStatistic = async (req: Request, res: Response) => {
     );
 
     const nummberOfUsers: number = await userService.getNumberOfUsers({});
-    const numberOfProducts: number = await productService.getNumberOfProducts(
-        {}
-    );
+    const numberOfProducts: number = await productService.getNumberOfProducts({
+        minPrice: 0,
+        maxPrice: 100000000,
+    });
 
     const numberOfInvoicesToday: number =
         await invoiceService.getNumberOfInvoicesByDay(today);

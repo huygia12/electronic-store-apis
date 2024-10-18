@@ -1,4 +1,4 @@
-import {ResponseMessage} from "@/common/constants";
+import {ResponseMessage, Sort} from "@/common/constants";
 import prisma from "@/common/prisma-client";
 import {
     OrderProductRequest,
@@ -18,8 +18,9 @@ import providerService from "./provider-service";
 import categoryService from "./category-service";
 import attributeService from "./attribute-service";
 import ProductInOrderNotEnoughQuantity from "@/errors/order/product-in-order-not-enough-quantity";
+import {Prisma} from "@prisma/client";
 
-const productSizeLimit = 10;
+const productSizeLimit = 12;
 
 const getItemImageInsertion = (
     productItems: ProductItemRequest[],
@@ -306,6 +307,7 @@ const getProductsSummary = async (params: {
     searchingName?: string;
     providerID?: string;
     categoryID?: string;
+    limit?: number;
     currentPage: number;
 }): Promise<ProductSummary[]> => {
     const products: ProductSummary[] = await prisma.product.findMany({
@@ -329,8 +331,8 @@ const getProductsSummary = async (params: {
                 take: 1,
             },
         },
-        skip: (params.currentPage - 1) * productSizeLimit,
-        take: productSizeLimit,
+        skip: (params.currentPage - 1) * (params.limit || productSizeLimit),
+        take: params.limit || productSizeLimit,
     });
     return products;
 };
@@ -372,76 +374,157 @@ const getProductFullJoinWithID = async (
     return product;
 };
 
-const getProductsFullJoinAfterFilter = async (params: {
+const getProductFullJoinList = async (params: {
     categoryID?: string;
     providerID?: string;
     sale?: boolean;
     limit?: number;
+    sortByPrice?: Sort;
+    sortByName?: Sort;
+    optionIDs?: string[];
     exceptID?: string;
+    minPrice: number;
+    maxPrice: number;
     currentPage: number;
 }): Promise<ProductFullJoin[]> => {
-    const products: ProductFullJoin[] = await prisma.product.findMany({
-        where: {
-            categoryID: params.categoryID,
-            providerID: params.providerID,
-            productItems: {
-                some: {
-                    discount: {
-                        gte: params.sale ? 1 : 0,
-                    },
+    let query = `
+    SELECT gr."productID", gr."itemID", gr."maxPrice"
+    FROM (
+        SELECT 
+            p."productID", 
+            pi."itemID", 
+            MAX(pi."price") as "maxPrice", 
+            ROW_NUMBER() OVER (PARTITION BY p."productID" ORDER BY pi."itemID") AS rn
+        FROM "Product" p
+            JOIN "ProductItem" pi ON p."productID" = pi."productID"
+            LEFT JOIN "ProductAttribute" pa ON p."productID" = pa."productID"
+        WHERE
+            pi."price" BETWEEN ${params.minPrice} AND ${params.maxPrice}
+            ${params.exceptID ? `AND p."productID" <> '${params.exceptID}'` : ""}
+            ${params.providerID ? `AND p."providerID" = '${params.providerID}'` : ""}
+            ${params.categoryID ? `AND p."categoryID" = '${params.categoryID}'` : ""}
+            ${params.sale ? `AND pi."discount" > 0` : ""}
+        GROUP BY p."productID", pi."itemID"
+            ${
+                params.optionIDs
+                    ? `HAVING ARRAY_AGG(pa."optionID") @> ARRAY[${params.optionIDs.map((id) => `'${id}'::uuid`).join(", ")}]`
+                    : ""
+            }
+    ) as gr
+    WHERE rn = 1
+    `;
+    const orderByClauses = [];
+    if (params.sortByPrice) {
+        orderByClauses.push(`"maxPrice" ${params.sortByPrice}`);
+    }
+    if (params.sortByName) {
+        orderByClauses.push(`p."productName" ${params.sortByName}`);
+    }
+    if (orderByClauses.length) {
+        query += ` ORDER BY ${orderByClauses.join(", ")}`;
+    }
+    const limit = params.limit || productSizeLimit;
+    const offset = (params.currentPage - 1) * limit;
+
+    query += ` LIMIT ${limit} OFFSET ${offset}`;
+
+    //Get productID and itemID satisfying the conditions
+    const queryRows: {productID: string; itemID: string}[] =
+        await prisma.$queryRaw`${Prisma.raw(query)}`;
+
+    //Get products join with all other tables
+    const result =
+        await getResultAfterFilterProductWithSepecificItem(queryRows);
+
+    //Arrange products
+    if (params.sortByName || params.sortByPrice) {
+        const productMap = new Map<string, ProductFullJoin>();
+        result.products.forEach((product) => {
+            productMap.set(product.productID, product);
+        });
+
+        const sortedProducts = result.productIDs.reduce<ProductFullJoin[]>(
+            (prev, curr) => {
+                const mapElement = productMap.get(curr);
+                mapElement && prev.push(mapElement);
+                return prev;
+            },
+            []
+        );
+        return sortedProducts;
+    }
+    return result.products;
+};
+
+const getResultAfterFilterProductWithSepecificItem = async (
+    searchingIDs: {productID: string; itemID: string}[]
+): Promise<{products: ProductFullJoin[]; productIDs: string[]}> => {
+    const productSet = new Set<string>();
+    const itemSet = new Set<string>();
+
+    searchingIDs.forEach((searchingID) => {
+        productSet.add(searchingID.productID);
+        itemSet.add(searchingID.itemID);
+    });
+
+    const productIDs = Array.from(productSet);
+    const itemIDs = Array.from(itemSet);
+
+    const productJoinWithItems: ProductFullJoin[] =
+        await prisma.product.findMany({
+            where: {
+                productID: {
+                    in: productIDs,
                 },
             },
-            productID: {
-                not: params.exceptID,
-            },
-        },
-        include: {
-            category: true,
-            provider: true,
-            productAttributes: {
-                include: {
-                    attributeOption: {
-                        include: {
-                            attributeType: true,
+            include: {
+                category: true,
+                provider: true,
+                productAttributes: {
+                    include: {
+                        attributeOption: {
+                            include: {
+                                attributeType: true,
+                            },
                         },
                     },
                 },
-            },
-            productItems: {
-                include: {
-                    itemImages: true,
+                productItems: {
+                    where: {
+                        itemID: {
+                            in: itemIDs,
+                        },
+                    },
+                    include: {
+                        itemImages: true,
+                    },
+                    take: 1,
                 },
-                orderBy: {
-                    discount: params.sale ? "desc" : undefined,
-                },
-                take: 1,
             },
-        },
-        take: params.limit || productSizeLimit,
-        skip: (params.currentPage - 1) * (params.limit || productSizeLimit),
-    });
+        });
 
-    return products;
+    return {products: productJoinWithItems, productIDs};
 };
 
 const getProductsWithSpecificItem = async (
     products: {productID: string; itemID: string}[]
 ): Promise<ProductJoinWithItems[]> => {
-    const productIds: string[] = [];
-    const itemIds: string[] = [];
+    const productSet = new Set<string>();
+    const itemSet = new Set<string>();
 
     products.forEach((product) => {
-        if (!productIds.includes(product.productID)) {
-            productIds.push(product.productID);
-        }
-        itemIds.push(product.itemID);
+        productSet.add(product.productID);
+        itemSet.add(product.itemID);
     });
+
+    const productIDs = Array.from(productSet);
+    const itemIDs = Array.from(itemSet);
 
     const productJoinWithItems: ProductJoinWithItems[] =
         await prisma.product.findMany({
             where: {
                 productID: {
-                    in: productIds,
+                    in: productIDs,
                 },
             },
             include: {
@@ -450,7 +533,7 @@ const getProductsWithSpecificItem = async (
                 productItems: {
                     where: {
                         itemID: {
-                            in: itemIds,
+                            in: itemIDs,
                         },
                     },
                 },
@@ -461,32 +544,46 @@ const getProductsWithSpecificItem = async (
 };
 
 const getNumberOfProducts = async (params: {
-    searchingName?: string;
-    providerID?: string;
     categoryID?: string;
-    exceptID?: string;
+    providerID?: string;
     sale?: boolean;
+    limit?: number;
+    optionIDs?: string[];
+    searchingName?: string;
+    exceptID?: string;
+    minPrice: number;
+    maxPrice: number;
 }): Promise<number> => {
-    const quantity: number = await prisma.product.count({
-        where: {
-            categoryID: params.categoryID,
-            providerID: params.providerID,
-            productID: {
-                not: params.exceptID,
-            },
-            productName: {
-                contains: params.searchingName,
-            },
-            productItems: {
-                some: {
-                    discount: {
-                        gte: params.sale ? 1 : 0,
-                    },
-                },
-            },
-        },
-    });
-    return quantity;
+    let query = `
+    SELECT CAST(COUNT(*) AS INTEGER) as quantity
+    FROM (
+        SELECT 
+            p."productID", 
+            pi."itemID",
+            ROW_NUMBER() OVER (PARTITION BY p."productID" ORDER BY pi."itemID") AS rn
+        FROM "Product" p
+            JOIN "ProductItem" pi ON p."productID" = pi."productID"
+            LEFT JOIN "ProductAttribute" pa ON p."productID" = pa."productID"
+        WHERE
+            pi."price" BETWEEN ${params.minPrice} AND ${params.maxPrice}
+            ${params.exceptID ? `AND p."productID" <> '${params.exceptID}'` : ""}
+            ${params.searchingName ? `AND LOWER(p."productName") LIKE LOWER('%${params.searchingName}%')` : ""}
+            ${params.providerID ? `AND p."providerID" = '${params.providerID}'` : ""}
+            ${params.categoryID ? `AND p."categoryID" = '${params.categoryID}'` : ""}
+            ${params.sale ? `AND pi."discount" > 0` : ""}
+            ${
+                params.optionIDs
+                    ? `AND pa."optionID" IN (${params.optionIDs.map((id) => `'${id}'`).join(", ")})`
+                    : ""
+            }
+        GROUP BY p."productID", pi."itemID"
+    ) AS gr
+    WHERE rn = 1
+    `;
+
+    const queryRows: {quantity: number}[] =
+        await prisma.$queryRaw`${Prisma.raw(query)}`;
+    return queryRows[0].quantity;
 };
 
 const getStatus = async (productID: string): Promise<ProductStatus> => {
@@ -529,10 +626,10 @@ export default {
     deleteProduct,
     getProductsSummary,
     getProductFullJoinWithID,
-    getProductsFullJoinAfterFilter,
+    getProductFullJoinList,
     getProductsWithSpecificItem,
-    getNumberOfProducts,
     getValidProductsInOrder,
     getStatus,
     decearseItemsQuantity,
+    getNumberOfProducts,
 };

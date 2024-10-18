@@ -54,4 +54,9 @@ enum Payment {
     PAYMENT_RESULT = "payment:result",
 }
 
-export {ResponseMessage, RequestMethod, AuthToken, UserRole, Payment};
+enum Sort {
+    ASC = "ASC",
+    DESC = "DESC",
+}
+
+export {ResponseMessage, RequestMethod, AuthToken, UserRole, Payment, Sort};

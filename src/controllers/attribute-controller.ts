@@ -102,8 +102,6 @@ const getAttributes = async (req: Request, res: Response) => {
     const providerID = req.query.providerID as string;
     const categoryID = req.query.categoryID as string;
 
-    console.log("cate ", categoryID);
-
     let optionIDs: string[] = [];
     if (categoryID || providerID) {
         optionIDs = await attributeService.getProductAttributesAfterFilter({
