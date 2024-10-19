@@ -73,6 +73,7 @@ const getProducts = async (req: Request, res: Response) => {
     if (optionsString) {
         optionIDs = optionsString.split(",");
     }
+
     if (!detail) {
         products = await productService.getProductsSummary({
             categoryID: categoryID,

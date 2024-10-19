@@ -571,12 +571,12 @@ const getNumberOfProducts = async (params: {
             ${params.providerID ? `AND p."providerID" = '${params.providerID}'` : ""}
             ${params.categoryID ? `AND p."categoryID" = '${params.categoryID}'` : ""}
             ${params.sale ? `AND pi."discount" > 0` : ""}
-            ${
-                params.optionIDs
-                    ? `AND pa."optionID" IN (${params.optionIDs.map((id) => `'${id}'`).join(", ")})`
-                    : ""
-            }
         GROUP BY p."productID", pi."itemID"
+        ${
+            params.optionIDs
+                ? `HAVING ARRAY_AGG(pa."optionID") @> ARRAY[${params.optionIDs.map((id) => `'${id}'::uuid`).join(", ")}]`
+                : ""
+        }
     ) AS gr
     WHERE rn = 1
     `;
