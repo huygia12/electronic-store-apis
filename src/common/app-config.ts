@@ -6,11 +6,11 @@ type Config = {
     AT_KEY: string;
     RT_KEY: string;
     APP_DOMAIN: string;
-    PAYMENT_CALLBACK_URL: string;
     CLIENT_DOMAIN: string;
 };
 
-const localhost = "http://localhost";
+// const localhost = "http://localhost";
+const localhost = "http://127.0.0.1";
 const envConfig = dotenv.config({
     path: resolve(".env") as string,
 });
@@ -26,8 +26,6 @@ process.env.PORT = process.env.PORT || "8000";
 
 if (!process.env.AT_SECRET_KEY || !process.env.RT_SECRET_KEY) {
     throw new Error("[app-config]: secret key is required");
-} else if (!process.env.PAYMENT_CALLBACK_ENDPOINT) {
-    throw new Error("[app-config]: client payment callback url is required");
 }
 
 const config: Config = {
@@ -37,7 +35,6 @@ const config: Config = {
     APP_DOMAIN: process.env.APP_DOMAIN || `${localhost}:${process.env.PORT}`,
     CLIENT_DOMAIN:
         process.env.CLIENT_DOMAIN || `${localhost}:${process.env.CLIENT_PORT}`,
-    PAYMENT_CALLBACK_URL: `${process.env.APP_DOMAIN}${process.env.PAYMENT_CALLBACK_ENDPOINT}`,
 };
 
 export default config;

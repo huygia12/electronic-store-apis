@@ -9,7 +9,7 @@ const getZaloPayemtOrder = (
     userID: string
 ): ZaloPaymentOrder => {
     const embed_data = {
-        redirecturl: `${zaloPayConfig.redirect}/${userID}/orders?paidInvoiceID=${invoiceID}`,
+        redirecturl: `${config.CLIENT_DOMAIN}/users/${userID}/orders?paidInvoiceID=${invoiceID}`,
     };
 
     const transID: number = Math.floor(Math.random() * 1000000);
@@ -24,7 +24,7 @@ const getZaloPayemtOrder = (
         amount: 50000,
         description: `GH Shop - Payment for the order #${transID}`,
         bank_code: "",
-        callback_url: config.PAYMENT_CALLBACK_URL,
+        callback_url: `${config.CLIENT_DOMAIN}/v1/invoices/callback`,
         mac: "",
     };
 

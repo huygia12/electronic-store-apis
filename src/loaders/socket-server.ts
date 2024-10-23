@@ -5,6 +5,8 @@ import reviewController from "@/controllers/review-controller";
 import productController from "@/controllers/product-controller";
 import {ClientEvents, ServerEvents} from "@/common/types";
 import userController from "@/controllers/user-controller";
+import {options} from "@/common/cors-config";
+
 interface Option {
     debug: boolean;
 }
@@ -13,17 +15,9 @@ class SocketServer {
     private _io: Server<ClientEvents, ServerEvents>;
     private _debug: boolean;
 
-    public constructor(
-        expressServer: ExpressServer,
-        clientEndpoint: string,
-        opts?: Option
-    ) {
+    public constructor(expressServer: ExpressServer, opts?: Option) {
         this._io = new Server<ClientEvents, ServerEvents>(expressServer, {
-            cors: {
-                origin: [clientEndpoint, `https://admin.socket.io`],
-                methods: ["GET", "POST"],
-                credentials: true,
-            },
+            cors: options,
         });
         this._debug = opts?.debug || false;
 

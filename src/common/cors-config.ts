@@ -1,7 +1,10 @@
 import {CorsOptions} from "cors";
+import config from "./app-config";
 
 export const options: CorsOptions = {
-    origin: true,
+    origin: [config.CLIENT_DOMAIN, `https://admin.socket.io`],
     optionsSuccessStatus: 200,
-    credentials: true, //allow receive cookies from request
+    credentials: true,
+    methods: "*",
+    allowedHeaders: "*",
 };

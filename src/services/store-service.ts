@@ -52,4 +52,34 @@ const updateBanner = async (
         });
     }
 };
+
+// const updateBanner = async (
+//     storeID: string,
+//     validPayload: BannerUpdateRequest
+// ) => {
+//     const store = await prisma.store.findFirst({
+//         where: {storeID: storeID},
+//     });
+//     if (!store) {
+//         console.debug(`[store service]: Store not found`);
+//         throw new StoreNotFoundError(ResponseMessage.STORE_NOT_FOUND);
+//     }
+
+//     if (validPayload.position === `left`) {
+//         await prisma.store.update({
+//             where: {storeID: storeID},
+//             data: {
+//                 leftBanner: validPayload.newBanner,
+//             },
+//         });
+//     } else {
+//         await prisma.store.update({
+//             where: {storeID: storeID},
+//             data: {
+//                 rightBanner: validPayload.newBanner,
+//             },
+//         });
+//     }
+// };
+
 export default {getSlides, getStore, updateBanner};
