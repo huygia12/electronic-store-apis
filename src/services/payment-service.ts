@@ -9,7 +9,7 @@ const getZaloPayemtOrder = (
     userID: string
 ): ZaloPaymentOrder => {
     const embed_data = {
-        redirecturl: `${config.CLIENT_DOMAIN}/users/${userID}/orders?paidInvoiceID=${invoiceID}`,
+        redirecturl: `${config.CLIENT_DOMAIN}/?paidInvoiceID=${invoiceID}&userID=${userID}`,
     };
 
     const transID: number = Math.floor(Math.random() * 1000000);
