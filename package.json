@@ -7,6 +7,9 @@
         "type": "git",
         "url": "git+https://github.com/huygia12/electronic-store-apis"
     },
+    "_moduleAliasess": {
+        "@": "dist"
+    },
     "scripts": {
         "prepare": "husky install",
         "build": "rimraf ./dist && tsc",

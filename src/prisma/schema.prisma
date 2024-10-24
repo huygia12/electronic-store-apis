@@ -44,7 +44,7 @@ model Invoice {
   paymentID       String?
   shippingFee     Float?
   shippingTime    Int?             @default(0)
-  doneAt          DateTime?        @db.Timestamp(6)
+  doneAt          DateTime?        @db.Timestamptz(6)
   User            User             @relation(fields: [userID], references: [userID], onDelete: NoAction, onUpdate: NoAction, map: "Invoice_userID_User_userID_fk")
   invoiceProducts InvoiceProduct[]
 }
@@ -171,9 +171,15 @@ model User {
   refreshTokensUsed String[]  @map("refreshTokenUsed")
   createdAt         DateTime  @default(now()) @db.Timestamptz(6)
   updateAt          DateTime  @default(now()) @db.Timestamptz(6)
-  deletedAt         DateTime? @db.Timestamp(6)
+  deletedAt         DateTime? @db.Timestamptz(6)
   invoices          Invoice[]
   review            Review[]
+}
+
+model EmailRegistration {
+  registrationID String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
 }
 
 enum invoiceStatus {

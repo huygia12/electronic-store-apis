@@ -9,7 +9,6 @@ type Config = {
     CLIENT_DOMAIN: string;
 };
 
-// const localhost = "http://localhost";
 const localhost = "http://127.0.0.1";
 const envConfig = dotenv.config({
     path: resolve(".env") as string,

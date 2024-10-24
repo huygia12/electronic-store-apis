@@ -1,5 +1,5 @@
 DOCKER_USERNAME ?= huygia12
-APPLICATION_NAME ?= product-application
+APPLICATION_NAME ?= digital-web-shop-apis
 GIT_HASH ?= $(shell git log --format="%h" -n 1)
 SERVER_PORT ?= 8000
 ENV_FILE ?= .env
