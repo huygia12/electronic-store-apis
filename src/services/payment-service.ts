@@ -24,7 +24,7 @@ const getZaloPayemtOrder = (
         amount: 50000,
         description: `GH Shop - Payment for the order #${transID}`,
         bank_code: "",
-        callback_url: `${config.CLIENT_DOMAIN}/v1/invoices/callback`,
+        callback_url: `${config.APP_DOMAIN}/v1/invoices/callback`,
         mac: "",
     };
 
