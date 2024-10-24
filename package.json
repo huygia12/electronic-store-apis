@@ -7,7 +7,7 @@
         "type": "git",
         "url": "git+https://github.com/huygia12/electronic-store-apis"
     },
-    "_moduleAliasess": {
+    "_moduleAliases": {
         "@": "dist"
     },
     "scripts": {

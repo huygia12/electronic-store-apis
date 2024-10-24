@@ -16,6 +16,5 @@ export const options: CorsOptions = {
     ],
     optionsSuccessStatus: 200,
     credentials: true,
-    preflightContinue: true,
     origin: [config.CLIENT_DOMAIN, `https://admin.socket.io`],
 };
