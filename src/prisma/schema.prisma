@@ -50,23 +50,21 @@ model Invoice {
 }
 
 model InvoiceProduct {
-  discount     Float?      @default(0) @db.Real
-  price        Float       @db.Real
-  productName  String
-  quantity     Int         @db.SmallInt
-  invoiceID    String      @db.Uuid
-  productCode  String
-  color        String
-  storage      String?
-  categoryName String
-  providerName String
-  thump        String?
-  itemID       String      @db.Uuid
-  productID    String
-  Invoice      Invoice     @relation(fields: [invoiceID], references: [invoiceID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_invoiceID _Invoice_invoiceID_fk")
-  ProductItem  ProductItem @relation(fields: [itemID], references: [itemID], onDelete: NoAction, onUpdate: NoAction, map: "invoiceproduct_itemid_productitem_itemid_fk")
-
-  @@id([itemID, invoiceID], map: "invoice_product_unique")
+  discount         Float?  @default(0) @db.Real
+  price            Float   @db.Real
+  productName      String
+  quantity         Int     @db.SmallInt
+  invoiceID        String  @db.Uuid
+  productCode      String
+  color            String
+  storage          String?
+  categoryName     String
+  providerName     String
+  thump            String?
+  itemID           String
+  productID        String
+  invoiceProductID String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  Invoice          Invoice @relation(fields: [invoiceID], references: [invoiceID], onDelete: NoAction, onUpdate: NoAction, map: "InvoiceProduct_invoiceID _Invoice_invoiceID_fk")
 }
 
 model ItemImage {
@@ -104,18 +102,17 @@ model ProductAttribute {
 }
 
 model ProductItem {
-  itemID         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  thump          String
-  quantity       Int              @db.SmallInt
-  price          Float            @db.Real
-  productCode    String
-  discount       Float?           @default(0) @db.Real
-  color          String
-  storage        String?
-  productID      String           @db.Uuid
-  InvoiceProduct InvoiceProduct[]
-  itemImages     ItemImage[]
-  Product        Product          @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
+  itemID      String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  thump       String
+  quantity    Int         @db.SmallInt
+  price       Float       @db.Real
+  productCode String
+  discount    Float?      @default(0) @db.Real
+  color       String
+  storage     String?
+  productID   String      @db.Uuid
+  itemImages  ItemImage[]
+  Product     Product     @relation(fields: [productID], references: [productID], onDelete: NoAction, onUpdate: NoAction, map: "ProductItem_productID_Product_productID_fk")
 }
 
 model Provider {

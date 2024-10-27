@@ -388,31 +388,41 @@ const getProductFullJoinList = async (params: {
     currentPage: number;
 }): Promise<ProductFullJoin[]> => {
     let query = `
-    SELECT gr."productID", gr."itemID", gr."maxPrice"
-    FROM (
-        SELECT 
+SELECT ft."productID", ft."itemID", ft."maxPrice"
+FROM (
+      SELECT 
+        gr."productID", 
+        gr."itemID", 
+        MAX(gr."afterDiscountPrice") as "maxPrice",
+        ROW_NUMBER() OVER (PARTITION BY gr."productID" ORDER BY gr."itemID") AS rn
+      FROM
+        (
+          SELECT 
             p."productID", 
-            pi."itemID", 
-            MAX(pi."price") as "maxPrice", 
-            ROW_NUMBER() OVER (PARTITION BY p."productID" ORDER BY pi."itemID") AS rn
-        FROM "Product" p
+            pi."itemID",
+            pi."price" * (100 - COALESCE(pi."discount", 0))/100 AS "afterDiscountPrice"
+          FROM "Product" p
             JOIN "ProductItem" pi ON p."productID" = pi."productID"
-            LEFT JOIN "ProductAttribute" pa ON p."productID" = pa."productID"
-        WHERE
-            pi."price" BETWEEN ${params.minPrice} AND ${params.maxPrice}
+          WHERE
+            pi."price" >= ${params.minPrice}
             ${params.exceptID ? `AND p."productID" <> '${params.exceptID}'` : ""}
             ${params.providerID ? `AND p."providerID" = '${params.providerID}'` : ""}
             ${params.categoryID ? `AND p."categoryID" = '${params.categoryID}'` : ""}
             ${params.sale ? `AND pi."discount" > 0` : ""}
-        GROUP BY p."productID", pi."itemID"
+        ) as gr
+        LEFT JOIN "ProductAttribute" pa ON gr."productID" = pa."productID"
+        WHERE
+            gr."afterDiscountPrice" BETWEEN ${params.minPrice} AND ${params.maxPrice}
+        GROUP BY gr."productID", gr."itemID"
             ${
                 params.optionIDs
                     ? `HAVING ARRAY_AGG(pa."optionID") @> ARRAY[${params.optionIDs.map((id) => `'${id}'::uuid`).join(", ")}]`
                     : ""
             }
-    ) as gr
-    WHERE rn = 1
+      ) as ft
+WHERE rn = 1
     `;
+
     const orderByClauses = [];
     if (params.sortByPrice) {
         orderByClauses.push(`"maxPrice" ${params.sortByPrice}`);
@@ -428,6 +438,7 @@ const getProductFullJoinList = async (params: {
 
     query += ` LIMIT ${limit} OFFSET ${offset}`;
 
+    console.log(query);
     //Get productID and itemID satisfying the conditions
     const queryRows: {productID: string; itemID: string}[] =
         await prisma.$queryRaw`${Prisma.raw(query)}`;
