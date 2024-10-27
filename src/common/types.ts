@@ -1,34 +1,87 @@
-import {
+import type {
     AttributeOption,
     AttributeType,
     Category,
+    Invoice,
+    InvoiceProduct,
     ItemImage,
     Product,
-    ProductAttribute,
     ProductItem,
     Provider,
-    userRoles,
+    Review,
+    SlideShow,
+    Store,
+    userRole,
 } from "@prisma/client";
+import {ReviewCreationRequest} from "./schemas";
+import {SocketIOError} from "@/errors/custom-error";
 
+//Ultility type
 type Nullable<T> = T | null;
 
 type Optional<T> = T | undefined;
 
+//Attributes
 type Attribute = AttributeType & {attributeOptions: AttributeOption[]};
 
-type ProviderType = Provider & {productQuantity: number};
+type AttributeOptionType = AttributeOption & {attributeType: AttributeType};
 
-type CategoryType = Category & {
+type ProductAttributeType = {
+    attributeOption: AttributeOptionType;
+};
+
+//Provider
+type ProviderWithProductTotal = Provider & {productQuantity: number};
+
+//Category
+type CategoryWithProductTotal = Category & {
     productQuantity: number;
 };
 
+//Product
 type ProductItemType = ProductItem & {itemImages: ItemImage[]};
 
+type ProductJoinWithItems = Product & {category: Category} & {
+    provider: Provider;
+} & {productItems: ProductItem[]};
+
+type ItemDictionary = {
+    [itemID: string]: ProductWithSpecificItem;
+};
+
+type ProductSummary = Product & {
+    category: Category;
+    provider: Provider;
+    productItems: {thump: string; price: number; discount: number | null}[];
+};
+
 type ProductFullJoin = Product & {
-    productAttributes: ProductAttribute[];
+    category: Category;
+    provider: Provider;
+    productAttributes: ProductAttributeType[];
     productItems: ProductItemType[];
 };
 
+interface ProductStatus {
+    rating: number;
+}
+
+type ProductWithSpecificItem = {
+    discount: Nullable<number>;
+    price: number;
+    productName: string;
+    quantity: number;
+    productCode: string;
+    color: string;
+    storage: Nullable<string>;
+    categoryName: string;
+    providerName: string;
+    thump: Nullable<string>;
+    itemID: string;
+    productID: string;
+};
+
+//User
 interface UserDTO {
     userID: string;
     userName: string;
@@ -36,7 +89,7 @@ interface UserDTO {
     phoneNumber: Nullable<string>;
     avatar: Nullable<string>;
     isBanned: Nullable<boolean>;
-    role: userRoles;
+    role: userRole;
     createdAt: Date;
     updateAt: Date;
     refreshTokensUsed: string[];
@@ -49,7 +102,7 @@ interface UserResponseDTO {
     phoneNumber: Nullable<string>;
     avatar: Nullable<string>;
     isBanned: Nullable<boolean>;
-    role: userRoles;
+    role: userRole;
     createdAt: Date;
     updateAt: Date;
 }
@@ -59,17 +112,109 @@ interface UserInTokenPayload {
     userName: string;
     email: string;
     avatar: Nullable<string>;
-    role: userRoles;
+    role: userRole;
+}
+
+//Order
+interface ZaloPaymentOrder {
+    app_id: number;
+    app_trans_id: string;
+    app_user: string;
+    app_time: number; // miliseconds
+    item: string; // Json array
+    embed_data: string; // Json string
+    amount: number;
+    description: string;
+    bank_code: string;
+    mac: string;
+    callback_url: string;
+}
+
+interface ZaloPaymentResult {
+    return_code: number;
+    return_message: string;
+}
+
+type InvoiceFullJoin = Invoice & {invoiceProducts: InvoiceProduct[]};
+
+//Statistic
+interface InvoiceStatistic {
+    date: Date;
+    order: number;
+    revenue: number;
+}
+
+//Review
+type ReviewFullJoin = Review & {
+    childrenReview: (Review & {
+        childrenReview: Review[];
+        user: {
+            userID: string;
+            userName: string;
+            avatar: Nullable<string>;
+            role: userRole;
+            createdAt: Date;
+        };
+        product: {productName: string};
+    })[];
+    user: {
+        userID: string;
+        userName: string;
+        avatar: Nullable<string>;
+        role: userRole;
+        createdAt: Date;
+    };
+    product: {productName: string};
+};
+
+//Store
+type StoreFullJoin = Store & {slideShows: SlideShow[]};
+
+//Events
+interface ClientEvents {
+    "product:join": (payload: {productID: string}) => void;
+    "product:leave": (payload: {productID: string}) => void;
+    "review:create": (
+        payload: ReviewCreationRequest,
+        callback: (status: Optional<SocketIOError>) => void
+    ) => void;
+    "review:delete": (
+        payload: {reviewID: string},
+        callback: (status: Optional<SocketIOError>) => void
+    ) => void;
+    "user:ban": (
+        payload: {userID: string; banned: boolean},
+        callback: (error: Optional<SocketIOError>) => void
+    ) => void;
+}
+
+interface ServerEvents {
+    "review:create": (payload: {review: ReviewFullJoin}) => void;
+    "review:delete": (payload: {review: Review}) => void;
+    "user:ban": (payload: {userID: string}) => void;
 }
 
 export type {
     Nullable,
     Optional,
     Attribute,
-    ProviderType,
-    CategoryType,
+    ProviderWithProductTotal,
+    CategoryWithProductTotal,
     UserDTO,
     UserInTokenPayload,
     UserResponseDTO,
+    ProductSummary,
     ProductFullJoin,
+    ProductJoinWithItems,
+    ProductStatus,
+    ZaloPaymentOrder,
+    ZaloPaymentResult,
+    ProductWithSpecificItem,
+    InvoiceStatistic,
+    InvoiceFullJoin,
+    ClientEvents,
+    ServerEvents,
+    ReviewFullJoin,
+    StoreFullJoin,
+    ItemDictionary,
 };

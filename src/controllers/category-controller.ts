@@ -3,37 +3,46 @@ import categoryService from "../services/category-service";
 import {StatusCodes} from "http-status-codes";
 import {ResponseMessage} from "@/common/constants";
 import {CategoryRequest} from "@/common/schemas";
-import {Category} from "@prisma/client";
+import {CategoryWithProductTotal} from "@/common/types";
 
 const createCategory = async (req: Request, res: Response) => {
-    const newCategory: CategoryRequest = req.body;
+    const newCategory = req.body as CategoryRequest;
 
-    await categoryService.insertCategory(newCategory);
+    let category = await categoryService.insertCategory(newCategory);
+
+    category = await categoryService.getCategoryByID(category.categoryID);
 
     console.debug(
         `[category controller]: Insert category: ${newCategory.categoryName} successfull`
     );
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
+        info: category,
     });
 };
 
 const updateCategory = async (req: Request, res: Response) => {
-    const categoryID: string = req.params.id;
-    const categoryReq: CategoryRequest = req.body;
+    const categoryID = req.params.id as string;
+    const categoryReq = req.body as CategoryRequest;
 
-    await categoryService.updateCategory(categoryID, categoryReq);
+    let category = await categoryService.updateCategory(
+        categoryID,
+        categoryReq
+    );
+
+    category = await categoryService.getCategoryByID(category.categoryID);
 
     console.debug(
         `[category controller]: Update category to ${categoryReq.categoryName} successfull`
     );
     res.status(StatusCodes.OK).json({
         message: "Update category success",
+        info: category,
     });
 };
 
 const deleteCategory = async (req: Request, res: Response) => {
-    const categoryID: string = req.params.id;
+    const categoryID = req.params.id as string;
 
     await categoryService.deleteCategory(categoryID);
     console.debug(`[category controller]: Delete category successfull`);
@@ -43,7 +52,8 @@ const deleteCategory = async (req: Request, res: Response) => {
 };
 
 const getCategories = async (req: Request, res: Response) => {
-    const categorys: Category[] = await categoryService.getCategories();
+    const categorys: CategoryWithProductTotal[] =
+        await categoryService.getCategories();
 
     console.debug(`[category controller]: Get categorys successfull`);
     return res.status(StatusCodes.OK).json({

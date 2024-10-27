@@ -1,6 +1,11 @@
 import {compareSync, hashSync} from "bcrypt";
-import {LoginRequest, SignupRequest, UserUpdateRequest} from "@/common/schemas";
-import {User, userRoles} from "@prisma/client";
+import {
+    LoginRequest,
+    PasswordUpdateRequest,
+    SignupRequest,
+    UserUpdateRequest,
+} from "@/common/schemas";
+import {type User, userRole} from "@prisma/client";
 import prisma from "@/common/prisma-client";
 import {
     Nullable,
@@ -16,10 +21,15 @@ import WrongPasswordError from "@/errors/user/wrong-password";
 import jwtService from "./jwt-service";
 import ms from "ms";
 import {Response} from "express";
+import UserIsBanned from "@/errors/user/user-is-banned";
+
+const saltOfRound = 10;
+const userSizeLimit = 10;
 
 const getUserByEmail = async (email: string): Promise<Nullable<User>> => {
     const user: Nullable<User> = await prisma.user.findFirst({
         where: {
+            deletedAt: null,
             email: email,
         },
     });
@@ -67,6 +77,7 @@ const getUserResponseByID = async (
 ): Promise<UserResponseDTO> => {
     const user: Nullable<UserResponseDTO> = await prisma.user.findUnique({
         where: {
+            deletedAt: null,
             userID: userID,
         },
         select: {
@@ -95,6 +106,7 @@ const getUserResponseByID = async (
 const getUserDTOByID = async (userID: string): Promise<UserDTO> => {
     const user: Nullable<UserDTO> = await prisma.user.findUnique({
         where: {
+            deletedAt: null,
             userID: userID,
         },
         select: {
@@ -121,11 +133,18 @@ const getUserDTOByID = async (userID: string): Promise<UserDTO> => {
     return user;
 };
 
-const login = async (res: Response, validPayload: LoginRequest) => {
+const login = async (
+    res: Response,
+    validPayload: LoginRequest
+): Promise<string> => {
     const validUser: UserDTO = await getValidUserDTO(
         validPayload.email,
         validPayload.password
     );
+
+    if (validUser.isBanned) {
+        throw new UserIsBanned(ResponseMessage.USER_IS_BANNED);
+    }
 
     const userInPayLoad: UserInTokenPayload = {
         userID: validUser.userID,
@@ -150,13 +169,6 @@ const login = async (res: Response, validPayload: LoginRequest) => {
         throw new Error(ResponseMessage.GENERATE_TOKEN_ERROR);
 
     //set two token to cookie
-    res.cookie(AuthToken.AC, accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(jwtService.ACCESS_TOKEN_LIFE_SPAN),
-    });
-
     res.cookie(AuthToken.RF, refreshToken, {
         httpOnly: true,
         secure: true,
@@ -166,9 +178,10 @@ const login = async (res: Response, validPayload: LoginRequest) => {
 
     //Push refresh token to DB
     await pushRefreshToken(refreshToken, validUser.userID);
+    return accessToken;
 };
 
-const refreshToken = async (res: Response, userID: string) => {
+const refreshToken = async (res: Response, userID: string): Promise<string> => {
     const userDTO: UserDTO = await getUserDTOByID(userID);
 
     const userInPayLoad: UserInTokenPayload = {
@@ -194,13 +207,6 @@ const refreshToken = async (res: Response, userID: string) => {
         throw new Error(ResponseMessage.GENERATE_TOKEN_ERROR);
 
     //set two token to cookie
-    res.cookie(AuthToken.AC, accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(jwtService.ACCESS_TOKEN_LIFE_SPAN),
-    });
-
     res.cookie(AuthToken.RF, refreshToken, {
         httpOnly: true,
         secure: true,
@@ -209,9 +215,12 @@ const refreshToken = async (res: Response, userID: string) => {
     });
     //Push refresh token to DB
     await pushRefreshToken(refreshToken, userID);
+    return accessToken;
 };
 
-const insertUser = async (validPayload: SignupRequest) => {
+const insertUser = async (
+    validPayload: SignupRequest
+): Promise<UserResponseDTO> => {
     const userHolder: Nullable<User> = await getUserByEmail(validPayload.email);
 
     if (userHolder) {
@@ -221,15 +230,29 @@ const insertUser = async (validPayload: SignupRequest) => {
         throw new UserAlreadyExistError(ResponseMessage.USER_ALREADY_EXISTS);
     }
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
         data: {
             userName: validPayload.userName,
             email: validPayload.email,
-            password: hashSync(validPayload.password, 10),
-            role: userRoles.CLIENT,
+            password: hashSync(validPayload.password, saltOfRound),
+            avatar: validPayload.avatar || null,
+            phoneNumber: validPayload.phoneNumber || null,
+            role: userRole.CLIENT,
             refreshTokensUsed: [],
         },
+        select: {
+            userID: true,
+            userName: true,
+            email: true,
+            phoneNumber: true,
+            avatar: true,
+            isBanned: true,
+            role: true,
+            createdAt: true,
+            updateAt: true,
+        },
     });
+    return user;
 };
 
 const updateUserInfo = async (
@@ -260,6 +283,8 @@ const updateUserInfo = async (
             email: validPayload.email,
             phoneNumber: validPayload.phoneNumber,
             avatar: validPayload.avatar,
+            isBanned: validPayload.isBanned,
+            updateAt: new Date(),
         },
         select: {
             userID: true,
@@ -325,8 +350,28 @@ const clearUserRefreshTokenUsed = async (userID: string) => {
     });
 };
 
-const getUserResponseDTOs = async (): Promise<UserResponseDTO[]> => {
+const getUserResponseDTOs = async (params: {
+    date?: Date;
+    searching?: string;
+    currentPage: number;
+}): Promise<UserResponseDTO[]> => {
+    const startOfDay =
+        params.date && new Date(params.date.setHours(0, 0, 0, 0));
+    const endOfDay =
+        params.date && new Date(params.date.setHours(23, 59, 59, 999));
+
     const users: UserResponseDTO[] = await prisma.user.findMany({
+        where: {
+            deletedAt: null,
+            createdAt: {
+                gte: startOfDay,
+                lte: endOfDay,
+            },
+            userName: {
+                contains: params.searching,
+                mode: "insensitive",
+            },
+        },
         select: {
             userID: true,
             userName: true,
@@ -338,9 +383,22 @@ const getUserResponseDTOs = async (): Promise<UserResponseDTO[]> => {
             createdAt: true,
             updateAt: true,
         },
+        skip: (params.currentPage - 1) * userSizeLimit,
+        take: userSizeLimit,
     });
 
     return users;
+};
+
+const deleteUserByID = async (id: string) => {
+    await prisma.user.update({
+        data: {
+            deletedAt: new Date(),
+        },
+        where: {
+            userID: id,
+        },
+    });
 };
 
 const checkIfRefreshTokenExistInDB = async (
@@ -359,6 +417,49 @@ const checkIfRefreshTokenExistInDB = async (
     return user !== null;
 };
 
+const getNumberOfUsers = async (params: {
+    date?: Date;
+    searching?: string;
+}): Promise<number> => {
+    const startOfDay =
+        params.date && new Date(params.date.setHours(0, 0, 0, 0));
+    const endOfDay =
+        params.date && new Date(params.date.setHours(23, 59, 59, 999));
+    const quantity: number = await prisma.user.count({
+        where: {
+            deletedAt: null,
+            createdAt: {
+                gte: startOfDay,
+                lte: endOfDay,
+            },
+            userName: {
+                contains: params.searching,
+                mode: "insensitive",
+            },
+        },
+    });
+    return quantity;
+};
+
+const updatePassword = async (
+    email: string,
+    validPayload: PasswordUpdateRequest
+) => {
+    const validUser: UserDTO = await getValidUserDTO(
+        email,
+        validPayload.oldPassword
+    );
+
+    await prisma.user.update({
+        where: {
+            userID: validUser.userID,
+        },
+        data: {
+            password: hashSync(validPayload.newPassword, saltOfRound),
+        },
+    });
+};
+
 export default {
     getUserResponseByID,
     insertUser,
@@ -371,4 +472,7 @@ export default {
     login,
     refreshToken,
     checkIfRefreshTokenExistInDB,
+    deleteUserByID,
+    getNumberOfUsers,
+    updatePassword,
 };

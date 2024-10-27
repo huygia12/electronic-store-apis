@@ -6,24 +6,28 @@ import {AttributeOptionRequest, AttributeTypeRequest} from "@/common/schemas";
 import {Attribute} from "@/common/types";
 
 const createAttributeOption = async (req: Request, res: Response) => {
-    const typeID: string = req.params.typeID;
-    const newAttributeOption: AttributeOptionRequest = req.body;
+    const typeID = req.params.typeID as string;
+    const newAttributeOption = req.body as AttributeOptionRequest;
 
-    await attributeService.insertAttributeOption(typeID, newAttributeOption);
+    const attributeOption = await attributeService.insertAttributeOption(
+        typeID,
+        newAttributeOption
+    );
 
     console.debug(`[attribute controller]: 
         Attribute option: ${newAttributeOption} has been added successfull`);
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
+        info: attributeOption,
     });
 };
 
 const updateAttributeOption = async (req: Request, res: Response) => {
-    const optionID: string = req.params.optionID;
-    const typeID: string = req.params.typeID;
+    const optionID = req.params.optionID as string;
+    const typeID = req.params.typeID as string;
     const attributeOptionUpdateReq: AttributeOptionRequest = req.body;
 
-    await attributeService.updateAttributeOption(
+    const attributeOption = await attributeService.updateAttributeOption(
         optionID,
         typeID,
         attributeOptionUpdateReq
@@ -33,12 +37,13 @@ const updateAttributeOption = async (req: Request, res: Response) => {
         Attribute option: upate attribute option with id ${attributeOptionUpdateReq.optionValue} successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
+        info: attributeOption,
     });
 };
 
 const deleteAttributeOption = async (req: Request, res: Response) => {
-    const optionID: string = req.params.optionID;
-    const typeID: string = req.params.typeID;
+    const optionID = req.params.optionID as string;
+    const typeID = req.params.typeID as string;
 
     await attributeService.deleteAttributeOption(optionID, typeID);
     console.debug(
@@ -50,32 +55,40 @@ const deleteAttributeOption = async (req: Request, res: Response) => {
 };
 
 const createAttributeType = async (req: Request, res: Response) => {
-    const createAttributeTypeReq: AttributeTypeRequest = req.body;
+    const createAttributeTypeReq = req.body as AttributeTypeRequest;
 
-    await attributeService.insertAttributeType(createAttributeTypeReq);
+    const typeID = await attributeService.insertAttributeType(
+        createAttributeTypeReq
+    );
+
+    const payload = await attributeService.getAttributeByID(typeID);
 
     console.debug(`[attribute controller]: 
         Attribute type: ${createAttributeTypeReq.typeValue} has been added successfull`);
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
+        info: payload,
     });
 };
 
 const updateAttributeType = async (req: Request, res: Response) => {
-    const typeID: string = req.params.typeID;
-    const attributeTypeReq: AttributeTypeRequest = req.body;
+    const typeID = req.params.typeID as string;
+    const attributeTypeReq = req.body as AttributeTypeRequest;
 
     await attributeService.updateAttributeType(typeID, attributeTypeReq);
+
+    const payload = await attributeService.getAttributeByID(typeID);
 
     console.debug(`[attribute controller]: 
         Attribute type: update to ${attributeTypeReq.typeValue} successfull`);
     res.status(StatusCodes.OK).json({
         message: "Update attribute type success",
+        info: payload,
     });
 };
 
 const deleteAttributeType = async (req: Request, res: Response) => {
-    const typeID: string = req.params.typeID;
+    const typeID = req.params.typeID as string;
 
     await attributeService.deleteAttributeType(typeID);
 
@@ -86,7 +99,20 @@ const deleteAttributeType = async (req: Request, res: Response) => {
 };
 
 const getAttributes = async (req: Request, res: Response) => {
-    const attributes: Attribute[] = await attributeService.getAttributes();
+    const providerID = req.query.providerID as string;
+    const categoryID = req.query.categoryID as string;
+
+    let optionIDs: string[] = [];
+    if (categoryID || providerID) {
+        optionIDs = await attributeService.getProductAttributesAfterFilter({
+            providerID: providerID,
+            categoryID: categoryID,
+        });
+    }
+
+    const attributes: Attribute[] = await attributeService.getAttributes(
+        optionIDs.length === 0 ? undefined : optionIDs
+    );
 
     console.debug(`[attribute controller]: get attributes successfull`);
     res.status(StatusCodes.OK).json({

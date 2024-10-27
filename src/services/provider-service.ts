@@ -1,7 +1,7 @@
 import {ResponseMessage} from "@/common/constants";
 import prisma from "@/common/prisma-client";
 import {ProviderRequest} from "@/common/schemas";
-import {Nullable, ProviderType} from "@/common/types";
+import {Nullable, ProviderWithProductTotal} from "@/common/types";
 import ProviderAlreadyExistError from "@/errors/provider/provider-already-exist";
 import ProviderDeletingError from "@/errors/provider/provider-deleting-error";
 import ProviderNotFoundError from "@/errors/provider/provider-not-found";
@@ -19,7 +19,7 @@ const getProviderByName = async (
     return provider;
 };
 
-const getProviders = async (): Promise<ProviderType[]> => {
+const getProviders = async (): Promise<ProviderWithProductTotal[]> => {
     const rawData = await prisma.provider.findMany({
         include: {
             _count: {
@@ -30,18 +30,23 @@ const getProviders = async (): Promise<ProviderType[]> => {
         },
     });
 
-    const providers = rawData.reduce<ProviderType[]>((prev, curr) => {
-        prev.push({
-            providerID: curr.providerID,
-            providerName: curr.providerName,
-            productQuantity: curr._count.products,
-        });
-        return prev;
-    }, []);
+    const providers = rawData.reduce<ProviderWithProductTotal[]>(
+        (prev, curr) => {
+            prev.push({
+                providerID: curr.providerID,
+                providerName: curr.providerName,
+                productQuantity: curr._count.products,
+            });
+            return prev;
+        },
+        []
+    );
     return providers;
 };
 
-const getProviderByID = async (providerID: string): Promise<ProviderType> => {
+const getProviderByID = async (
+    providerID: string
+): Promise<ProviderWithProductTotal> => {
     const providerHolder = await prisma.provider.findUnique({
         where: {providerID: providerID},
         include: {
@@ -67,7 +72,9 @@ const getProviderByID = async (providerID: string): Promise<ProviderType> => {
     };
 };
 
-const insertProvider = async (validPayload: ProviderRequest) => {
+const insertProvider = async (
+    validPayload: ProviderRequest
+): Promise<Provider> => {
     const providerHolder: Nullable<Provider> = await getProviderByName(
         validPayload.providerName
     );
@@ -81,17 +88,19 @@ const insertProvider = async (validPayload: ProviderRequest) => {
         );
     }
 
-    await prisma.provider.create({
+    const provider = await prisma.provider.create({
         data: {
             providerName: validPayload.providerName,
         },
     });
+
+    return provider;
 };
 
 const updateProvider = async (
     providerID: string,
     validPayload: ProviderRequest
-) => {
+): Promise<Provider> => {
     let providerHolder: Nullable<Provider> = await getProviderByName(
         validPayload.providerName
     );
@@ -107,16 +116,19 @@ const updateProvider = async (
     //Check if provider with provided id exists or not
     await getProviderByID(providerID);
 
-    await prisma.provider.update({
+    const provider = await prisma.provider.update({
         where: {providerID: providerID},
         data: {
             providerName: validPayload.providerName,
         },
     });
+
+    return provider;
 };
 
 const deleteProvider = async (providerID: string) => {
-    const providerHolder: ProviderType = await getProviderByID(providerID);
+    const providerHolder: ProviderWithProductTotal =
+        await getProviderByID(providerID);
 
     if (providerHolder.productQuantity > 0) {
         console.debug(

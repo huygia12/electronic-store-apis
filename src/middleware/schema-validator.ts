@@ -1,9 +1,11 @@
+import {ResponseMessage} from "@/common/constants";
 import schemas from "@/common/schemas";
 import {ValidationError} from "@/errors/custom-error";
 import {RequestHandler} from "express";
+import {StatusCodes} from "http-status-codes";
 import {ZodError, ZodIssueOptionalMessage} from "zod";
 
-const schemaValidator = (
+const expressSchemaValidator = (
     path: string,
     useZodError: boolean = true
 ): RequestHandler => {
@@ -14,7 +16,11 @@ const schemaValidator = (
 
     return (req, res, next) => {
         console.debug(
-            `[schema validator] request body : ${JSON.stringify(req.body)}`
+            `[schema validator] request body : ${JSON.stringify(
+                req.body,
+                null,
+                2
+            )}`
         );
 
         const schema = schemaObject[req.method];
@@ -29,7 +35,9 @@ const schemaValidator = (
         } catch (error: unknown) {
             console.debug(
                 `[schema validator] zod detect errors : ${JSON.stringify(
-                    error
+                    error,
+                    null,
+                    2
                 )}`
             );
 
@@ -57,4 +65,56 @@ const schemaValidator = (
     };
 };
 
-export default schemaValidator;
+const socketIOSchemaValidator = (
+    clientEvent: string,
+    payload: unknown,
+    callback: Function
+): boolean => {
+    const eventBroker: string[] = clientEvent.split(":");
+
+    const schema = schemas[eventBroker[0]][eventBroker[1]];
+    if (!schema) {
+        throw new Error(`Schema not found for clientEvent: ${clientEvent}`);
+    }
+
+    try {
+        schema.parse(payload);
+    } catch (error: unknown) {
+        console.debug(
+            `[schema validator] zod detect errors : ${JSON.stringify(
+                error,
+                null,
+                2
+            )}`
+        );
+
+        if (error instanceof ZodError) {
+            const zodError: ValidationError = {
+                status: "failed",
+                details: error.errors.map(
+                    ({code, message, path}: ZodIssueOptionalMessage) => ({
+                        code: code,
+                        message: message,
+                        path: path.toString(),
+                    })
+                ),
+            };
+            callback({
+                status: StatusCodes.UNPROCESSABLE_ENTITY,
+                detail: zodError,
+            });
+        } else {
+            callback({
+                status: StatusCodes.INTERNAL_SERVER_ERROR,
+                message: ResponseMessage.UNEXPECTED_ERROR,
+            });
+        }
+        return false;
+    }
+
+    // validation successful
+    console.debug(`[schema validator] socket payload valid`);
+    return true;
+};
+
+export {expressSchemaValidator, socketIOSchemaValidator};
