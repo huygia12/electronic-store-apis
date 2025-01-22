@@ -10,7 +10,6 @@ const getSliderImages = async (req: Request, res: Response) => {
 
     const payload: SlideShow[] = await storeService.getSlides(storeID);
 
-    console.debug(`[store controller]: get slides successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: payload,
@@ -30,7 +29,6 @@ const updateBanner = async (req: Request, res: Response) => {
 
     await storeService.updateBanner(storeID, bannerUpdateRequest);
 
-    console.debug(`[store controller]: update banner successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
     });
@@ -39,7 +37,6 @@ const updateBanner = async (req: Request, res: Response) => {
 const getStore = async (req: Request, res: Response) => {
     const payload = await storeService.getStore();
 
-    console.debug(`[store controller]: get store successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: payload,

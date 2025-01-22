@@ -59,9 +59,6 @@ const getProviderByID = async (
     });
 
     if (!providerHolder) {
-        console.debug(
-            `[provider service]: get provider: ${providerID} not found`
-        );
         throw new ProviderNotFoundError(ResponseMessage.PROVIDER_NOT_FOUND);
     }
 
@@ -80,9 +77,6 @@ const insertProvider = async (
     );
 
     if (providerHolder) {
-        console.debug(
-            `[provider service]: Insert provider: ${validPayload.providerName} already exists`
-        );
         throw new ProviderAlreadyExistError(
             ResponseMessage.PROVIDER_ALREADY_EXISTS
         );
@@ -105,16 +99,10 @@ const updateProvider = async (
         validPayload.providerName
     );
     if (providerHolder) {
-        console.debug(
-            `[provider service]: Update provider: ${validPayload.providerName} already exists`
-        );
         throw new ProviderAlreadyExistError(
             ResponseMessage.PROVIDER_ALREADY_EXISTS
         );
     }
-
-    //Check if provider with provided id exists or not
-    await getProviderByID(providerID);
 
     const provider = await prisma.provider.update({
         where: {providerID: providerID},
@@ -131,9 +119,6 @@ const deleteProvider = async (providerID: string) => {
         await getProviderByID(providerID);
 
     if (providerHolder.productQuantity > 0) {
-        console.debug(
-            `[provider service]: Delete provider: ${providerID} cannot be deleted because of related product: ${providerHolder.productQuantity}`
-        );
         throw new ProviderDeletingError(ResponseMessage.PROVIDER_DELETE_FAIL);
     }
 

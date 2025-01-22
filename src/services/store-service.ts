@@ -32,7 +32,6 @@ const updateBanner = async (
         where: {storeID: storeID},
     });
     if (!store) {
-        console.debug(`[store service]: Store not found`);
         throw new StoreNotFoundError(ResponseMessage.STORE_NOT_FOUND);
     }
 

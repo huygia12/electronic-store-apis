@@ -14,9 +14,6 @@ import {
     ProductSummary,
 } from "@/common/types";
 import ProductNotFoundError from "@/errors/product/product-not-found";
-import providerService from "./provider-service";
-import categoryService from "./category-service";
-import attributeService from "./attribute-service";
 import ProductInOrderNotEnoughQuantity from "@/errors/order/product-in-order-not-enough-quantity";
 import {Prisma} from "@prisma/client";
 
@@ -40,12 +37,6 @@ const getItemImageInsertion = (
 };
 
 const createProduct = async (validPayload: ProductRequest) => {
-    // check if providerID, categoryID exist or not
-    await providerService.getProviderByID(validPayload.providerID);
-    await categoryService.getCategoryByID(validPayload.categoryID);
-    // check if optionIDs exist or not
-    validPayload.options &&
-        (await attributeService.checkAttributeOptions(validPayload.options));
     await prisma.$transaction(async (prisma) => {
         // await db.transaction(async trx => {
         //Insert into Product and then retrieve the id
@@ -67,8 +58,6 @@ const createProduct = async (validPayload: ProductRequest) => {
                 },
             })
         ).productID;
-
-        console.debug(`[create product]: productID: ${productID}`);
 
         //Insert into ProductItemTable and then retieve the ids
         await prisma.productItem.createMany({
@@ -92,8 +81,6 @@ const createProduct = async (validPayload: ProductRequest) => {
             })
         ).map((item) => item.itemID);
 
-        console.debug(`[create product]: product ItemIDs: ${productItemIDs}`);
-
         //Insert into ProductImageTable
         await prisma.itemImage.createMany({
             data: getItemImageInsertion(
@@ -112,22 +99,13 @@ const createProduct = async (validPayload: ProductRequest) => {
             });
         }
     });
-
-    // })
 };
 
 const updateProduct = async (
     validPayload: ProductRequest,
     productID: string
 ) => {
-    // check if providerID, categoryID exist or not
-    await providerService.getProviderByID(validPayload.providerID);
-    await categoryService.getCategoryByID(validPayload.categoryID);
-    // check if optionIDs exist or not
-    validPayload.options &&
-        (await attributeService.checkAttributeOptions(validPayload.options));
     // check if productID exists or not
-    await getProductFullJoinWithID(productID);
     await prisma.$transaction(async (prisma) => {
         //Update ProductTable
         await prisma.product.update({
@@ -211,7 +189,6 @@ const updateProduct = async (
 };
 
 const deleteProduct = async (productID: string) => {
-    await getProductFullJoinWithID(productID);
     await prisma.$transaction(async (prisma) => {
         //Delete ProductImageTable
         let productItemIDs: string[] = await prisma.productItem
@@ -296,9 +273,6 @@ const getValidProductsInOrder = async (
         return itemDictionary;
     } catch {
         // Get in here if there is a product in order but not exist in database
-        console.debug(
-            `[product-service] checkIfProductsInOrder: product not found in dictionary`
-        );
         throw new ProductNotFoundError(ResponseMessage.PRODUCT_NOT_FOUND);
     }
 };
@@ -365,9 +339,6 @@ const getProductFullJoinWithID = async (
     });
 
     if (!product) {
-        console.debug(
-            `[product service]: product with id ${productID} not found`
-        );
         throw new ProductNotFoundError(ResponseMessage.PRODUCT_NOT_FOUND);
     }
 
@@ -438,7 +409,6 @@ WHERE rn = 1
 
     query += ` LIMIT ${limit} OFFSET ${offset}`;
 
-    console.log(query);
     //Get productID and itemID satisfying the conditions
     const queryRows: {productID: string; itemID: string}[] =
         await prisma.$queryRaw`${Prisma.raw(query)}`;

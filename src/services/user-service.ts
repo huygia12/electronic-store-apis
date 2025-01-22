@@ -44,16 +44,12 @@ const getValidUserDTO = async (
     const findByEmail: Nullable<User> = await getUserByEmail(email);
 
     if (!findByEmail) {
-        console.debug(
-            `[user service]: get valid user: user with email ${email} cannot be found`
-        );
         throw new UserNotFoundError(ResponseMessage.USER_NOT_FOUND);
     }
 
     // Check whether password is valid
     const match = compareSync(password, findByEmail.password);
     if (!match) {
-        console.debug(`[user service]: password ${password} is not match`);
         throw new WrongPasswordError(ResponseMessage.WRONG_PASSWORD);
     }
 
@@ -94,9 +90,6 @@ const getUserResponseByID = async (
     });
 
     if (!user) {
-        console.debug(
-            `[user service]: get user response by id: user with id ${userID} cannot be found`
-        );
         throw new UserNotFoundError(ResponseMessage.USER_NOT_FOUND);
     }
 
@@ -124,9 +117,6 @@ const getUserDTOByID = async (userID: string): Promise<UserDTO> => {
     });
 
     if (!user) {
-        console.debug(
-            `[user service]: get user: user with ${userID} cannot be found`
-        );
         throw new UserNotFoundError(ResponseMessage.USER_NOT_FOUND);
     }
 
@@ -224,9 +214,6 @@ const insertUser = async (
     const userHolder: Nullable<User> = await getUserByEmail(validPayload.email);
 
     if (userHolder) {
-        console.debug(
-            `[user service]: insert user: user with email ${validPayload.email} already exists`
-        );
         throw new UserAlreadyExistError(ResponseMessage.USER_ALREADY_EXISTS);
     }
 
@@ -265,9 +252,6 @@ const updateUserInfo = async (
         );
 
         if (userHolder && userHolder.userID !== userID) {
-            console.debug(
-                `[user service]: update user: user with email ${validPayload.email} already exists`
-            );
             throw new UserAlreadyExistError(
                 ResponseMessage.USER_ALREADY_EXISTS
             );
@@ -303,8 +287,6 @@ const updateUserInfo = async (
 };
 
 const deleteRefreshToken = async (refreshToken: string, userID: string) => {
-    await getUserDTOByID(userID);
-
     const newRefreshTokens: Optional<string[]> = await prisma.user
         .findUnique({where: {userID: userID}})
         .then((user) =>
@@ -312,9 +294,6 @@ const deleteRefreshToken = async (refreshToken: string, userID: string) => {
         );
 
     if (!newRefreshTokens) {
-        console.debug(
-            `[user service]: delete refreshtoken: user refresh tokens is undefined`
-        );
         throw new Error();
     }
 
@@ -405,8 +384,6 @@ const checkIfRefreshTokenExistInDB = async (
     refreshToken: string,
     userID: string
 ): Promise<boolean> => {
-    await getUserDTOByID(userID);
-
     const user: Nullable<User> = await prisma.user.findFirst({
         where: {
             userID: userID,

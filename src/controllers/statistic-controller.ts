@@ -42,7 +42,6 @@ const getStatistic = async (req: Request, res: Response) => {
         currentPage: 1,
     });
 
-    console.debug(`[statistic controller]: getStatistic: succeed `);
     res.status(StatusCodes.OK).json({
         info: {
             totalUsers: nummberOfUsers,

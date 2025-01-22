@@ -42,9 +42,6 @@ const signup = async (req: Request, res: Response) => {
 
     const user = await userService.insertUser(userSignupReq);
 
-    console.debug(
-        `[user controller]: Signup: user with email ${userSignupReq.email} has been signup successfull`
-    );
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
         info: user,
@@ -70,9 +67,6 @@ const login = async (req: Request, res: Response) => {
         const refreshTokenFromCookie: string = req.cookies.refreshToken;
 
         if (typeof accessToken !== "string") {
-            console.debug(
-                `[login controller]: getToken in header failure: ${accessToken}`
-            );
             throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
         }
         // Get userID from accesstoken payload
@@ -103,9 +97,6 @@ const login = async (req: Request, res: Response) => {
             } catch (error: any) {
                 // If DB had that refreshToken which has been expired already so must delete that
                 if (error instanceof TokenExpiredError) {
-                    console.debug(
-                        `[user controller]: Login: token generating denied`
-                    );
                     await userService.deleteRefreshToken(
                         refreshTokenFromCookie,
                         userDecoded.userID
@@ -121,18 +112,10 @@ const login = async (req: Request, res: Response) => {
     } catch (error: any) {
         if (error instanceof UserAlreadyLoginError) {
             // Go in here if user already been login
-            console.debug(
-                `[user controller]: Login: user already been logged in`
-            );
             throw new UserAlreadyLoginError(ResponseMessage.USER_ALREADY_LOGIN);
         }
-
-        console.debug(
-            `[user controller]: login : error=${JSON.stringify(error)}`
-        );
     }
 
-    console.debug(`[user controller]: Login: starting login process...`);
     const accessToken: string = await userService.login(res, loginReq);
 
     res.status(StatusCodes.OK).json({
@@ -163,7 +146,6 @@ const logout = async (req: Request, res: Response) => {
         );
     }
 
-    console.debug(`[user controller]: Logout successfull`);
     res.removeHeader("Authorization");
     res.clearCookie(AuthToken.RF);
     res.status(StatusCodes.OK).json({message: ResponseMessage.SUCCESS});
@@ -180,9 +162,6 @@ const refreshToken = async (req: Request, res: Response) => {
     const refreshTokenFromCookie = req.cookies.refreshToken as string;
 
     if (!refreshTokenFromCookie) {
-        console.debug(
-            `[user controller]: refresh token: Refresh token not found`
-        );
         throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
     }
 
@@ -200,9 +179,6 @@ const refreshToken = async (req: Request, res: Response) => {
             );
 
         if (!existing) {
-            console.debug(
-                `[user controller]: Unknown refresh token: auto clear all refresh token in database`
-            );
             await userService.clearUserRefreshTokenUsed(userDecoded.userID);
             throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
         }
@@ -223,9 +199,6 @@ const refreshToken = async (req: Request, res: Response) => {
             },
         });
     } catch {
-        console.debug(
-            `[user controller] Check refresh token's authorization failure: invalid token`
-        );
         throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
     }
 };
@@ -246,7 +219,6 @@ const updateInfo = async (req: Request, res: Response) => {
         userUpdateReq
     );
 
-    console.debug(`[user controller] update user successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: updatedUser,
@@ -259,7 +231,6 @@ const getUser = async (req: Request, res: Response) => {
     const user: Nullable<UserResponseDTO> =
         await userService.getUserResponseByID(userID);
 
-    console.debug(`[user controller]: get user successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: user,
@@ -287,7 +258,6 @@ const getUsers = async (req: Request, res: Response) => {
         searching: searching,
     });
 
-    console.debug(`[user controller]: get users successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: {
@@ -303,15 +273,11 @@ const deleteUser = async (req: Request, res: Response) => {
     const user = await userService.getUserDTOByID(userID);
 
     if (user.role === UserRole.ADMIN) {
-        console.debug(
-            `[user controller]: delete user ${user.userID} fail : admin cannot be deleted`
-        );
         throw new UserCannotBeDeleted(ResponseMessage.ADMIN_CANNOT_BE_DELETED);
     }
 
     await userService.deleteUserByID(userID);
 
-    console.debug(`[user controller]: get user successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
     });
@@ -325,7 +291,6 @@ const updateUserPassword = async (req: Request, res: Response) => {
 
     await userService.updatePassword(user.email, payload);
 
-    console.debug(`[user controller]: update user password succeed`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
     });
@@ -356,9 +321,6 @@ const registerUserSocketHandlers = (
                 userID: payload.userID,
             });
             callback(undefined);
-            console.debug(
-                `[user controller] ban user=${payload.banned} : succeed`
-            );
         } catch (error) {
             if (error instanceof Error) {
                 console.error(`[error handler] ${error.name} : ${error.stack}`);

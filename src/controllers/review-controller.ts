@@ -18,7 +18,6 @@ const getReviews = async (req: Request, res: Response) => {
     const reviews: ReviewFullJoin[] =
         await reviewService.getReviewsByProductID(productID);
 
-    console.debug(`[review controller] getReviewsByProductID : successfully`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: reviews,
@@ -52,7 +51,6 @@ const registerReviewSocketHandlers = (
                 review: review,
             });
             callback(undefined);
-            console.debug(`[review controller] create review : succeed`);
         } catch (error) {
             if (error instanceof Error) {
                 console.error(`[error handler] ${error.name} : ${error.stack}`);
@@ -101,7 +99,6 @@ const registerReviewSocketHandlers = (
                 review: review,
             });
             callback(undefined);
-            console.debug(`[review controller] delete review : succeed`);
         } catch (error) {
             if (error instanceof Error) {
                 console.error(`[error handler] ${error.name} : ${error.stack}`);

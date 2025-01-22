@@ -21,15 +21,9 @@ const getInvoice = async (req: Request, res: Response) => {
     const invoice = await invoiceService.getInvoice(invoiceID);
 
     if (!invoice) {
-        console.debug(
-            `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-        );
         throw new InvoiceNotFound(invoiceID);
     }
 
-    console.debug(
-        `[invoice controller]: getInvoice with id ${invoiceID}: succeed `
-    );
     res.status(StatusCodes.OK).json({
         info: invoice,
     });
@@ -66,7 +60,6 @@ const getInvoices = async (req: Request, res: Response) => {
         userName: userName,
     });
 
-    console.debug(`[invoice controller]: getInvoices: succeed `);
     res.status(StatusCodes.OK).json({
         info: {
             invoices: invoices,
@@ -82,9 +75,6 @@ const updateInvoice = async (req: Request, res: Response) => {
     let invoice = await invoiceService.getInvoice(invoiceID);
 
     if (!invoice) {
-        console.debug(
-            "[invoice controller] updateInvoice : failed to find invoice"
-        );
         throw new InvoiceNotFound(ResponseMessage.INVOICE_NOT_FOUND);
     }
 
@@ -102,9 +92,6 @@ const updateInvoice = async (req: Request, res: Response) => {
         ) {
             const invoice = await invoiceService.getInvoice(invoiceID);
             if (!invoice) {
-                console.debug(
-                    `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-                );
                 throw new InvoiceNotFound(invoiceID);
             }
 
@@ -119,7 +106,6 @@ const updateInvoice = async (req: Request, res: Response) => {
         }
     }
 
-    console.debug(`[invoice controller]: getInvoices: succeed `);
     res.status(StatusCodes.OK).json({
         info: updatedInvoice,
     });
@@ -146,9 +132,6 @@ const createNewOrder = async (req: Request, res: Response) => {
     const payload = await invoiceService.getInvoice(invoice.invoiceID);
 
     if (!payload) {
-        console.debug(
-            "[invoice controller] createnewOrder : failed to get invoice after insert"
-        );
         throw new InvoiceNotFound(ResponseMessage.INVOICE_NOT_FOUND);
     }
 
@@ -163,9 +146,6 @@ const makePayment = async (req: Request, res: Response) => {
 
     const invoice = await invoiceService.getInvoice(invoiceID);
     if (!invoice) {
-        console.debug(
-            `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-        );
         throw new InvoiceNotFound(invoiceID);
     }
 
@@ -217,9 +197,6 @@ const acceptPayment = async (req: Request, res: Response) => {
 
             const invoice = await invoiceService.getInvoice(invoiceID);
             if (!invoice) {
-                console.debug(
-                    `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-                );
                 throw new InvoiceNotFound(invoiceID);
             }
 

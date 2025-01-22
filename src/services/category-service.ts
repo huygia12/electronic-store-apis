@@ -59,9 +59,6 @@ const getCategoryByID = async (
     });
 
     if (!categoryHolder) {
-        console.debug(
-            `[category service]: get category: ${categoryID} not found`
-        );
         throw new CategoryNotFoundError(ResponseMessage.CATEGORY_NOT_FOUND);
     }
 
@@ -80,9 +77,6 @@ const insertCategory = async (
     );
 
     if (categoryHolder) {
-        console.debug(
-            `[category service]: Insert category: ${validPayload.categoryName} already exists`
-        );
         throw new CategoryAlreadyExistError(
             ResponseMessage.CATEGORY_ALREADY_EXISTS
         );
@@ -105,16 +99,10 @@ const updateCategory = async (
         validPayload.categoryName
     );
     if (categoryHolder) {
-        console.debug(
-            `[category service]: Update category: ${validPayload.categoryName} already exists`
-        );
         throw new CategoryAlreadyExistError(
             ResponseMessage.CATEGORY_ALREADY_EXISTS
         );
     }
-
-    //Check if category with provided id exists or not
-    await getCategoryByID(categoryID);
 
     const category = await prisma.category.update({
         where: {categoryID: categoryID},
@@ -131,9 +119,6 @@ const deleteCategory = async (categoryID: string) => {
         await getCategoryByID(categoryID);
 
     if (categoryHolder.productQuantity > 0) {
-        console.debug(
-            `[category service]: Delete category: ${categoryID} cannot be deleted because of related product: ${categoryHolder.productQuantity}`
-        );
         throw new CategoryDeletingError(ResponseMessage.CATEGORY_DELETE_FAIL);
     }
 

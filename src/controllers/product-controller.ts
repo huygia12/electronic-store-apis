@@ -11,9 +11,6 @@ const createProduct = async (req: Request, res: Response) => {
 
     await productService.createProduct(productCreateReq);
 
-    console.debug(
-        `[product controller]: create product ${productCreateReq.productName} successfull`
-    );
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
     });
@@ -46,7 +43,6 @@ const getProduct = async (req: Request, res: Response) => {
     const product: ProductFullJoin =
         await productService.getProductFullJoinWithID(productID);
 
-    console.debug(`[product controller]: get product successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: product,
@@ -109,7 +105,6 @@ const getProducts = async (req: Request, res: Response) => {
         exceptID: exceptID,
     });
 
-    console.debug(`[product controller]: get products successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: {
