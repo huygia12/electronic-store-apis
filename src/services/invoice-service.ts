@@ -8,7 +8,6 @@ import {
     InvoiceFullJoin,
     InvoiceStatistic,
     ItemDictionary,
-    Nullable,
     ProductWithSpecificItem,
     UserDTO,
 } from "@/common/types";
@@ -128,8 +127,8 @@ const getInvoices = async (params: {
 
 const getInvoice = async (
     invoiceID: string
-): Promise<Nullable<InvoiceFullJoin>> => {
-    const invoice: Nullable<InvoiceFullJoin> = await prisma.invoice.findFirst({
+): Promise<InvoiceFullJoin | null> => {
+    const invoice = await prisma.invoice.findFirst({
         where: {
             invoiceID: invoiceID,
         },

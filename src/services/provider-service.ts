@@ -1,7 +1,7 @@
 import {ResponseMessage} from "@/common/constants";
 import prisma from "@/common/prisma-client";
 import {ProviderRequest} from "@/common/schemas";
-import {Nullable, ProviderWithProductTotal} from "@/common/types";
+import {ProviderWithProductTotal} from "@/common/types";
 import ProviderAlreadyExistError from "@/errors/provider/provider-already-exist";
 import ProviderDeletingError from "@/errors/provider/provider-deleting-error";
 import ProviderNotFoundError from "@/errors/provider/provider-not-found";
@@ -9,8 +9,8 @@ import {Provider} from "@prisma/client";
 
 const getProviderByName = async (
     providerName: string
-): Promise<Nullable<Provider>> => {
-    const provider: Nullable<Provider> = await prisma.provider.findFirst({
+): Promise<Provider | null> => {
+    const provider = await prisma.provider.findFirst({
         where: {
             providerName: providerName,
         },
@@ -72,9 +72,7 @@ const getProviderByID = async (
 const insertProvider = async (
     validPayload: ProviderRequest
 ): Promise<Provider> => {
-    const providerHolder: Nullable<Provider> = await getProviderByName(
-        validPayload.providerName
-    );
+    const providerHolder = await getProviderByName(validPayload.providerName);
 
     if (providerHolder) {
         throw new ProviderAlreadyExistError(
@@ -95,9 +93,7 @@ const updateProvider = async (
     providerID: string,
     validPayload: ProviderRequest
 ): Promise<Provider> => {
-    let providerHolder: Nullable<Provider> = await getProviderByName(
-        validPayload.providerName
-    );
+    let providerHolder = await getProviderByName(validPayload.providerName);
     if (providerHolder) {
         throw new ProviderAlreadyExistError(
             ResponseMessage.PROVIDER_ALREADY_EXISTS

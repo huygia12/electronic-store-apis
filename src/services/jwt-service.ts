@@ -1,7 +1,7 @@
 import JWT from "jsonwebtoken";
 import config from "@/common/app-config";
 import {AuthToken} from "@/common/constants";
-import {Nullable, UserInTokenPayload} from "@/common/types";
+import {UserInTokenPayload} from "@/common/types";
 import ms from "ms";
 
 export const ACCESS_TOKEN_LIFE_SPAN = "1 days";
@@ -11,7 +11,7 @@ const generateToken = (
     payload: any,
     secretSignature: string,
     tokenLife: string
-): Nullable<string> => {
+): string | null => {
     try {
         if (!secretSignature) {
             throw new Error("Secret token is undefined");
@@ -43,8 +43,8 @@ const decodeToken = (token: string) => {
 const generateAuthToken = (
     userInfo: UserInTokenPayload,
     tokenType: AuthToken
-): Nullable<string> => {
-    const token: Nullable<string> = generateToken(
+): string | null => {
+    const token = generateToken(
         userInfo,
         tokenType === AuthToken.AC ? config.AT_KEY : config.RT_KEY,
         tokenType === AuthToken.AC

@@ -7,27 +7,20 @@ import {
 } from "@/common/schemas";
 import {type User, userRole} from "@prisma/client";
 import prisma from "@/common/prisma-client";
-import {
-    Nullable,
-    Optional,
-    UserDTO,
-    UserInTokenPayload,
-    UserResponseDTO,
-} from "@/common/types";
+import {UserDTO, UserInTokenPayload, UserResponseDTO} from "@/common/types";
 import UserAlreadyExistError from "@/errors/user/user-already-exist";
 import {AuthToken, ResponseMessage} from "@/common/constants";
 import UserNotFoundError from "@/errors/user/user-not-found";
 import WrongPasswordError from "@/errors/user/wrong-password";
 import jwtService from "./jwt-service";
-import ms from "ms";
-import {Response} from "express";
 import UserIsBanned from "@/errors/user/user-is-banned";
+import InvalidTokenError from "@/errors/auth/invalid-token";
 
 const saltOfRound = 10;
 const userSizeLimit = 10;
 
-const getUserByEmail = async (email: string): Promise<Nullable<User>> => {
-    const user: Nullable<User> = await prisma.user.findFirst({
+const getUserByEmail = async (email: string): Promise<User | null> => {
+    const user: User | null = await prisma.user.findFirst({
         where: {
             deletedAt: null,
             email: email,
@@ -41,7 +34,7 @@ const getValidUserDTO = async (
     email: string,
     password: string
 ): Promise<UserDTO> => {
-    const findByEmail: Nullable<User> = await getUserByEmail(email);
+    const findByEmail: User | null = await getUserByEmail(email);
 
     if (!findByEmail) {
         throw new UserNotFoundError(ResponseMessage.USER_NOT_FOUND);
@@ -71,7 +64,7 @@ const getValidUserDTO = async (
 const getUserResponseByID = async (
     userID: string
 ): Promise<UserResponseDTO> => {
-    const user: Nullable<UserResponseDTO> = await prisma.user.findUnique({
+    const user: UserResponseDTO | null = await prisma.user.findUnique({
         where: {
             deletedAt: null,
             userID: userID,
@@ -97,7 +90,7 @@ const getUserResponseByID = async (
 };
 
 const getUserDTOByID = async (userID: string): Promise<UserDTO> => {
-    const user: Nullable<UserDTO> = await prisma.user.findUnique({
+    const user: UserDTO | null = await prisma.user.findUnique({
         where: {
             deletedAt: null,
             userID: userID,
@@ -124,9 +117,23 @@ const getUserDTOByID = async (userID: string): Promise<UserDTO> => {
 };
 
 const login = async (
-    res: Response,
+    prevRT: string | undefined,
     validPayload: LoginRequest
-): Promise<string> => {
+): Promise<{refreshToken: string; accessToken: string}> => {
+    try {
+        if (typeof prevRT == "string") {
+            // Get userId from refreshtoken payload
+            const userDecoded = jwtService.decodeToken(
+                prevRT
+            ) as UserInTokenPayload;
+
+            // If refresh token already existed in DB so delete it
+            await deleteRefreshToken(prevRT, userDecoded.userID);
+        }
+    } catch (error: any) {
+        console.debug(`[user service]: login : ${JSON.stringify(error)}`);
+    }
+
     const validUser: UserDTO = await getValidUserDTO(
         validPayload.email,
         validPayload.password
@@ -136,7 +143,7 @@ const login = async (
         throw new UserIsBanned(ResponseMessage.USER_IS_BANNED);
     }
 
-    const userInPayLoad: UserInTokenPayload = {
+    const tokenPayload: UserInTokenPayload = {
         userID: validUser.userID,
         userName: validUser.userName,
         email: validUser.email,
@@ -145,13 +152,13 @@ const login = async (
     };
 
     //create AT, RT
-    const accessToken: Nullable<string> = jwtService.generateAuthToken(
-        userInPayLoad,
+    const accessToken: string | null = jwtService.generateAuthToken(
+        tokenPayload,
         AuthToken.AC
     );
 
-    const refreshToken: Nullable<string> = jwtService.generateAuthToken(
-        userInPayLoad,
+    const refreshToken: string | null = jwtService.generateAuthToken(
+        tokenPayload,
         AuthToken.RF
     );
 
@@ -159,61 +166,77 @@ const login = async (
         throw new Error(ResponseMessage.GENERATE_TOKEN_ERROR);
 
     //set two token to cookie
-    res.cookie(AuthToken.RF, refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(jwtService.REFRESH_TOKEN_LIFE_SPAN),
-    });
-
     //Push refresh token to DB
     await pushRefreshToken(refreshToken, validUser.userID);
-    return accessToken;
+    return {refreshToken, accessToken};
 };
 
-const refreshToken = async (res: Response, userID: string): Promise<string> => {
-    const userDTO: UserDTO = await getUserDTOByID(userID);
+const logout = async (prevRT: string, userID: string) => {
+    await deleteRefreshToken(prevRT, userID);
+};
 
-    const userInPayLoad: UserInTokenPayload = {
-        userID: userDTO.userID,
-        userName: userDTO.userName,
-        email: userDTO.email,
-        role: userDTO.role,
-        avatar: userDTO.avatar,
-    };
+const refreshToken = async (
+    prevRT: string
+): Promise<{refreshToken: string; accessToken: string}> => {
+    try {
+        const userDecoded = jwtService.verifyAuthToken(
+            prevRT,
+            AuthToken.RF
+        ) as UserInTokenPayload;
 
-    //create AT, RT
-    const accessToken: Nullable<string> = jwtService.generateAuthToken(
-        userInPayLoad,
-        AuthToken.AC
-    );
+        //Hacker's request: must clear all refresh token to login again
+        const existing: boolean = await checkIfRefreshTokenExistInDB(
+            prevRT,
+            userDecoded.userID
+        );
 
-    const refreshToken: Nullable<string> = jwtService.generateAuthToken(
-        userInPayLoad,
-        AuthToken.RF
-    );
+        if (!existing) {
+            await clearUserRefreshTokenUsed(userDecoded.userID);
+            throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
+        }
 
-    if (!accessToken || !refreshToken)
-        throw new Error(ResponseMessage.GENERATE_TOKEN_ERROR);
+        //Down here token must be valid
+        const userDTO: UserDTO = await getUserDTOByID(userDecoded.userID);
 
-    //set two token to cookie
-    res.cookie(AuthToken.RF, refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(jwtService.REFRESH_TOKEN_LIFE_SPAN),
-    });
-    //Push refresh token to DB
-    await pushRefreshToken(refreshToken, userID);
-    return accessToken;
+        deleteRefreshToken(prevRT, userDecoded.userID);
+        const tokenPayload: UserInTokenPayload = {
+            userID: userDTO.userID,
+            userName: userDTO.userName,
+            email: userDTO.email,
+            role: userDTO.role,
+            avatar: userDTO.avatar,
+        };
+
+        //create AT, RT
+        const accessToken: string | null = jwtService.generateAuthToken(
+            tokenPayload,
+            AuthToken.AC
+        );
+
+        const refreshToken: string | null = jwtService.generateAuthToken(
+            tokenPayload,
+            AuthToken.RF
+        );
+
+        if (!accessToken || !refreshToken)
+            throw new Error(ResponseMessage.GENERATE_TOKEN_ERROR);
+
+        //Push refresh token to DB
+        pushRefreshToken(refreshToken, userDTO.userID);
+        return {refreshToken, accessToken};
+    } catch {
+        throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
+    }
 };
 
 const insertUser = async (
     validPayload: SignupRequest
 ): Promise<UserResponseDTO> => {
-    const userHolder: Nullable<User> = await getUserByEmail(validPayload.email);
+    const duplicatedUser: User | null = await getUserByEmail(
+        validPayload.email
+    );
 
-    if (userHolder) {
+    if (duplicatedUser) {
         throw new UserAlreadyExistError(ResponseMessage.USER_ALREADY_EXISTS);
     }
 
@@ -247,7 +270,7 @@ const updateUserInfo = async (
     validPayload: UserUpdateRequest
 ): Promise<UserResponseDTO> => {
     if (validPayload.email) {
-        const userHolder: Nullable<User> = await getUserByEmail(
+        const userHolder: User | null = await getUserByEmail(
             validPayload.email
         );
 
@@ -287,7 +310,7 @@ const updateUserInfo = async (
 };
 
 const deleteRefreshToken = async (refreshToken: string, userID: string) => {
-    const newRefreshTokens: Optional<string[]> = await prisma.user
+    const newRefreshTokens: string[] | undefined = await prisma.user
         .findUnique({where: {userID: userID}})
         .then((user) =>
             user?.refreshTokensUsed.filter((token) => token !== refreshToken)
@@ -384,7 +407,7 @@ const checkIfRefreshTokenExistInDB = async (
     refreshToken: string,
     userID: string
 ): Promise<boolean> => {
-    const user: Nullable<User> = await prisma.user.findFirst({
+    const user: User | null = await prisma.user.findFirst({
         where: {
             userID: userID,
             refreshTokensUsed: {has: refreshToken},
@@ -438,18 +461,15 @@ const updatePassword = async (
 };
 
 export default {
-    getUserResponseByID,
-    insertUser,
-    deleteRefreshToken,
-    pushRefreshToken,
-    clearUserRefreshTokenUsed,
-    updateUserInfo,
-    getUserResponseDTOs,
-    getUserDTOByID,
     login,
+    logout,
+    insertUser,
     refreshToken,
-    checkIfRefreshTokenExistInDB,
-    deleteUserByID,
+    updateUserInfo,
+    getUserResponseByID,
+    getUserDTOByID,
+    getUserResponseDTOs,
     getNumberOfUsers,
+    deleteUserByID,
     updatePassword,
 };

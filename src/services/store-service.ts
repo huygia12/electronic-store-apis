@@ -1,6 +1,6 @@
 import {BannerUpdateRequest} from "@/common/schemas";
 import prisma from "@/common/prisma-client";
-import {Nullable, StoreFullJoin} from "@/common/types";
+import {StoreFullJoin} from "@/common/types";
 import {SlideShow} from "@prisma/client";
 import StoreNotFoundError from "@/errors/store/store-not-found";
 import {ResponseMessage} from "@/common/constants";
@@ -15,7 +15,7 @@ const getSlides = async (storeID: string): Promise<SlideShow[]> => {
     return slides;
 };
 
-const getStore = async (): Promise<Nullable<StoreFullJoin>> => {
+const getStore = async (): Promise<StoreFullJoin | null> => {
     const store = await prisma.store.findFirst({
         include: {
             slideShows: true,

@@ -175,7 +175,7 @@ model User {
 
 model EmailRegistration {
   registrationID String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String
+  email          String   @unique(map: "unique_email")
   createdAt      DateTime @default(now()) @db.Timestamptz(6)
 }
 

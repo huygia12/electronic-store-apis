@@ -7,7 +7,6 @@ import {
 } from "@/common/schemas";
 import {
     ItemDictionary,
-    Nullable,
     ProductFullJoin,
     ProductJoinWithItems,
     ProductStatus,
@@ -314,7 +313,7 @@ const getProductsSummary = async (params: {
 const getProductFullJoinWithID = async (
     productID: string
 ): Promise<ProductFullJoin> => {
-    const product: Nullable<ProductFullJoin> = await prisma.product.findFirst({
+    const product = await prisma.product.findFirst({
         where: {
             productID: productID,
         },

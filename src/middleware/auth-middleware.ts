@@ -1,13 +1,13 @@
 import {Request, Response, NextFunction} from "express";
 import jwtService from "../services/jwt-service";
-import {Optional, UserInTokenPayload} from "@/common/types";
+import {UserInTokenPayload} from "@/common/types";
 import {AuthToken, ResponseMessage, UserRole} from "@/common/constants";
 import MissingTokenError from "@/errors/auth/missing-token";
 import InvalidTokenError from "@/errors/auth/invalid-token";
 import AccessDenided from "@/errors/auth/access-denied";
 
 const isAuthorized = (req: Request, res: Response, next: NextFunction) => {
-    const accessToken: Optional<string | string[]> =
+    const accessToken: string | string[] | undefined =
         req.headers["authorization"];
 
     checkAuth(accessToken);
@@ -16,7 +16,7 @@ const isAuthorized = (req: Request, res: Response, next: NextFunction) => {
     next();
 };
 
-const checkAuth = (token: Optional<string>) => {
+const checkAuth = (token: string | undefined) => {
     if (typeof token !== "string") {
         console.debug(
             `[auth-middleware] Check authorization failure: missing token`
@@ -35,7 +35,7 @@ const checkAuth = (token: Optional<string>) => {
 };
 
 const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
-    const accessToken: Optional<string | string[]> =
+    const accessToken: string | string[] | undefined =
         req.headers["authorization"];
 
     if (typeof accessToken !== "string") {

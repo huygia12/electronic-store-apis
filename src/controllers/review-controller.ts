@@ -1,9 +1,4 @@
-import {
-    ClientEvents,
-    Nullable,
-    ReviewFullJoin,
-    ServerEvents,
-} from "@/common/types";
+import {ClientEvents, ReviewFullJoin, ServerEvents} from "@/common/types";
 import {Server, Socket} from "socket.io";
 import reviewService from "@/services/review-service";
 import {ResponseMessage} from "@/common/constants";
@@ -82,7 +77,7 @@ const registerReviewSocketHandlers = (
         if (!validateResult) return;
 
         try {
-            const review: Nullable<Review> = await reviewService.getReview(
+            const review: Review | null = await reviewService.getReview(
                 payload.reviewID
             );
             if (!review) {

@@ -175,6 +175,12 @@ const banUserSchema = zod.object({
     banned: zod.boolean(),
 });
 
+const signupForNotificationSchema = zod
+    .object({
+        email: z.string().email(),
+    })
+    .strict();
+
 export type AttributeTypeRequest = z.infer<typeof attributeTypeSchema>;
 
 export type AttributeOptionRequest = z.infer<typeof attributeOptionSchema>;
@@ -210,6 +216,8 @@ export type SlideUpdateRequest = z.infer<typeof slideUpdateSchema>;
 export type BannerUpdateRequest = z.infer<typeof bannerUpdateSchema>;
 
 export type OrderUpdateRequest = z.infer<typeof orderUpdateSchema>;
+
+export type SignupForNotification = z.infer<typeof signupForNotificationSchema>;
 
 export default {
     ["/attributes"]: {
@@ -268,6 +276,9 @@ export default {
     },
     ["/stores/:id"]: {
         [RequestMethod.PUT]: storeUpdateSchema,
+    },
+    ["/notification"]: {
+        [RequestMethod.POST]: signupForNotificationSchema,
     },
     ["review"]: {
         ["create"]: reviewCreationSchema,

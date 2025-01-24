@@ -2,7 +2,6 @@ import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
 import jwtService from "../services/jwt-service";
 import userService from "../services/user-service";
-import {TokenExpiredError} from "jsonwebtoken";
 import {
     LoginRequest,
     PasswordUpdateRequest,
@@ -12,35 +11,29 @@ import {
 } from "@/common/schemas";
 import {
     ClientEvents,
-    Nullable,
-    Optional,
     ServerEvents,
-    UserDTO,
     UserInTokenPayload,
     UserResponseDTO,
 } from "@/common/types";
 import {AuthToken, ResponseMessage, UserRole} from "@/common/constants";
-import UserNotFoundError from "@/errors/user/user-not-found";
-import UserAlreadyLoginError from "@/errors/user/user-already-login";
-import InvalidTokenError from "@/errors/auth/invalid-token";
 import MissingTokenError from "@/errors/auth/missing-token";
 import UserCannotBeDeleted from "@/errors/user/user-cannot-be-deleted";
 import {Server, Socket} from "socket.io";
 import {socketIOSchemaValidator} from "@/middleware/schema-validator";
+import ms from "ms";
+import mailService from "@/services/mail-service";
 
-/**
- * Make user registration
- * If input email had been registed by other user, then response 'user already exist'
- * If not, add user info to the DB with no provided token yet
- *
- * @param {Request} req
- * @param {Response} res
- * @param {NextFunction} next
- */
 const signup = async (req: Request, res: Response) => {
     const userSignupReq = req.body as SignupRequest;
 
     const user = await userService.insertUser(userSignupReq);
+
+    const mailContent = mailService.getSignupHTMLContent(user.userName);
+    mailService.sendEmail(
+        user.email,
+        "Đăng ký tài khoản HG Store",
+        mailContent
+    );
 
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
@@ -48,77 +41,23 @@ const signup = async (req: Request, res: Response) => {
     });
 };
 
-/**
- * Log user in the user
- * If the current tokens are still valid, then return `Already login`
- * If not, create tokens and send back in header; body'response will go with the user'information
- *
- * @param {Request} req
- * @param {Response} res
- * @param {NextFunction} next
- */
 const login = async (req: Request, res: Response) => {
     const loginReq = req.body as LoginRequest;
+    const rtInCookie = req.cookies.refreshToken as string | undefined;
 
-    //If both token are verified and refresh token is stored in DB, then will not create new token
-    try {
-        const accessToken: Optional<string | string[]> =
-            req.headers["authorization"];
-        const refreshTokenFromCookie: string = req.cookies.refreshToken;
+    const {refreshToken, accessToken} = await userService.login(
+        rtInCookie,
+        loginReq
+    );
 
-        if (typeof accessToken !== "string") {
-            throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
-        }
-        // Get userID from accesstoken payload
-        const userDecoded = jwtService.verifyAuthToken(
-            accessToken.replace("Bearer ", ""),
-            AuthToken.AC
-        ) as UserInTokenPayload;
+    res.cookie(AuthToken.RF, refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: ms(jwtService.REFRESH_TOKEN_LIFE_SPAN),
+    });
 
-        // Query user
-        const userDTO: Nullable<UserDTO> = await userService.getUserDTOByID(
-            userDecoded.userID
-        );
-
-        if (!userDTO)
-            throw new UserNotFoundError(ResponseMessage.USER_NOT_FOUND);
-
-        const tokenBucket: string[] = userDTO.refreshTokensUsed.filter(
-            (token) => token === refreshTokenFromCookie
-        );
-
-        // If refresh token already existed in DB
-        if (tokenBucket.length !== 0) {
-            try {
-                jwtService.verifyAuthToken(
-                    refreshTokenFromCookie,
-                    AuthToken.RF
-                );
-            } catch (error: any) {
-                // If DB had that refreshToken which has been expired already so must delete that
-                if (error instanceof TokenExpiredError) {
-                    await userService.deleteRefreshToken(
-                        refreshTokenFromCookie,
-                        userDecoded.userID
-                    );
-
-                    // and keep processing the login
-                    throw {};
-                }
-            }
-            // User already been login
-            throw new UserAlreadyLoginError("");
-        }
-    } catch (error: any) {
-        if (error instanceof UserAlreadyLoginError) {
-            // Go in here if user already been login
-            throw new UserAlreadyLoginError(ResponseMessage.USER_ALREADY_LOGIN);
-        }
-    }
-
-    const accessToken: string = await userService.login(res, loginReq);
-
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: {
             accessToken: accessToken,
@@ -126,24 +65,13 @@ const login = async (req: Request, res: Response) => {
     });
 };
 
-/**
- * Log user out, clear user's token
- * @param {Request} req
- * @param {Response} res
- * @returns
- */
 const logout = async (req: Request, res: Response) => {
-    const refreshTokenFromCookie = req.cookies.refreshToken as string;
+    const rtFromCookie = req.cookies.refreshToken as string;
 
-    if (refreshTokenFromCookie) {
-        const user = jwtService.decodeToken(
-            refreshTokenFromCookie
-        ) as UserInTokenPayload;
+    if (rtFromCookie) {
+        const user = jwtService.decodeToken(rtFromCookie) as UserInTokenPayload;
 
-        await userService.deleteRefreshToken(
-            refreshTokenFromCookie,
-            user.userID
-        );
+        await userService.logout(rtFromCookie, user.userID);
     }
 
     res.removeHeader("Authorization");
@@ -159,48 +87,29 @@ const logout = async (req: Request, res: Response) => {
  * @param {Response} res
  */
 const refreshToken = async (req: Request, res: Response) => {
-    const refreshTokenFromCookie = req.cookies.refreshToken as string;
+    const rtFromCookie = req.cookies.refreshToken as string;
 
-    if (!refreshTokenFromCookie) {
+    if (!rtFromCookie) {
         throw new MissingTokenError(ResponseMessage.TOKEN_MISSING);
     }
 
-    try {
-        const userDecoded = jwtService.verifyAuthToken(
-            refreshTokenFromCookie,
-            AuthToken.RF
-        ) as UserInTokenPayload;
+    const {refreshToken, accessToken} =
+        await userService.refreshToken(rtFromCookie);
 
-        //Hacker's request: must clear all refresh token to login again
-        const existing: boolean =
-            await userService.checkIfRefreshTokenExistInDB(
-                refreshTokenFromCookie,
-                userDecoded.userID
-            );
+    //set token to cookie
+    res.cookie(AuthToken.RF, refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: ms(jwtService.REFRESH_TOKEN_LIFE_SPAN),
+    });
 
-        if (!existing) {
-            await userService.clearUserRefreshTokenUsed(userDecoded.userID);
-            throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
-        }
-
-        //Down here token must be valid
-        await userService.deleteRefreshToken(
-            refreshTokenFromCookie,
-            userDecoded.userID
-        );
-        const accessToken: string = await userService.refreshToken(
-            res,
-            userDecoded.userID
-        );
-        res.status(StatusCodes.OK).json({
-            message: ResponseMessage.SUCCESS,
-            info: {
-                accessToken: accessToken,
-            },
-        });
-    } catch {
-        throw new InvalidTokenError(ResponseMessage.TOKEN_INVALID);
-    }
+    return res.status(StatusCodes.OK).json({
+        message: ResponseMessage.SUCCESS,
+        info: {
+            accessToken: accessToken,
+        },
+    });
 };
 
 /**
@@ -228,7 +137,7 @@ const updateInfo = async (req: Request, res: Response) => {
 const getUser = async (req: Request, res: Response) => {
     const userID = req.params.id as string;
 
-    const user: Nullable<UserResponseDTO> =
+    const user: UserResponseDTO | null =
         await userService.getUserResponseByID(userID);
 
     res.status(StatusCodes.OK).json({
@@ -241,7 +150,7 @@ const getUsers = async (req: Request, res: Response) => {
     const recently = Boolean(req.query.recently);
     const searching = req.query.searching as string;
     const currentPage = Number(req.query.currentPage) || 1;
-    let date: Optional<Date>;
+    let date: Date | undefined;
 
     if (recently) {
         date = new Date();

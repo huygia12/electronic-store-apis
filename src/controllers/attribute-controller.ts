@@ -91,14 +91,17 @@ const getAttributes = async (req: Request, res: Response) => {
 
     let optionIDs: string[] = [];
     if (categoryID || providerID) {
-        optionIDs = await attributeService.getProductAttributesAfterFilter({
-            providerID: providerID,
-            categoryID: categoryID,
-        });
+        optionIDs =
+            await attributeService.getProductAttributesBelongToProviderAndCategory(
+                {
+                    providerID: providerID,
+                    categoryID: categoryID,
+                }
+            );
     }
 
     const attributes: Attribute[] = await attributeService.getAttributes(
-        optionIDs.length === 0 ? undefined : optionIDs
+        providerID || categoryID ? optionIDs : undefined
     );
 
     res.status(StatusCodes.OK).json({

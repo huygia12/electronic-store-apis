@@ -16,11 +16,6 @@ import type {
 import {ReviewCreationRequest} from "./schemas";
 import {SocketIOError} from "@/errors/custom-error";
 
-//Ultility type
-type Nullable<T> = T | null;
-
-type Optional<T> = T | undefined;
-
 //Attributes
 type Attribute = AttributeType & {attributeOptions: AttributeOption[]};
 
@@ -67,16 +62,16 @@ interface ProductStatus {
 }
 
 type ProductWithSpecificItem = {
-    discount: Nullable<number>;
+    discount: number | null;
     price: number;
     productName: string;
     quantity: number;
     productCode: string;
     color: string;
-    storage: Nullable<string>;
+    storage: string | null;
     categoryName: string;
     providerName: string;
-    thump: Nullable<string>;
+    thump: string | null;
     itemID: string;
     productID: string;
 };
@@ -86,9 +81,9 @@ interface UserDTO {
     userID: string;
     userName: string;
     email: string;
-    phoneNumber: Nullable<string>;
-    avatar: Nullable<string>;
-    isBanned: Nullable<boolean>;
+    phoneNumber: string | null;
+    avatar: string | null;
+    isBanned: boolean | null;
     role: userRole;
     createdAt: Date;
     updateAt: Date;
@@ -99,9 +94,9 @@ interface UserResponseDTO {
     userID: string;
     userName: string;
     email: string;
-    phoneNumber: Nullable<string>;
-    avatar: Nullable<string>;
-    isBanned: Nullable<boolean>;
+    phoneNumber: string | null;
+    avatar: string | null;
+    isBanned: boolean | null;
     role: userRole;
     createdAt: Date;
     updateAt: Date;
@@ -111,7 +106,7 @@ interface UserInTokenPayload {
     userID: string;
     userName: string;
     email: string;
-    avatar: Nullable<string>;
+    avatar: string | null;
     role: userRole;
 }
 
@@ -151,7 +146,7 @@ type ReviewFullJoin = Review & {
         user: {
             userID: string;
             userName: string;
-            avatar: Nullable<string>;
+            avatar: string | null;
             role: userRole;
             createdAt: Date;
         };
@@ -160,7 +155,7 @@ type ReviewFullJoin = Review & {
     user: {
         userID: string;
         userName: string;
-        avatar: Nullable<string>;
+        avatar: string | null;
         role: userRole;
         createdAt: Date;
     };
@@ -176,15 +171,15 @@ interface ClientEvents {
     "product:leave": (payload: {productID: string}) => void;
     "review:create": (
         payload: ReviewCreationRequest,
-        callback: (status: Optional<SocketIOError>) => void
+        callback: (status: SocketIOError | undefined) => void
     ) => void;
     "review:delete": (
         payload: {reviewID: string},
-        callback: (status: Optional<SocketIOError>) => void
+        callback: (status: SocketIOError | undefined) => void
     ) => void;
     "user:ban": (
         payload: {userID: string; banned: boolean},
-        callback: (error: Optional<SocketIOError>) => void
+        callback: (error: SocketIOError | undefined) => void
     ) => void;
 }
 
@@ -195,8 +190,6 @@ interface ServerEvents {
 }
 
 export type {
-    Nullable,
-    Optional,
     Attribute,
     ProviderWithProductTotal,
     CategoryWithProductTotal,

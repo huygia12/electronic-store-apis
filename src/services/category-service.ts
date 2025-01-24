@@ -1,7 +1,7 @@
 import {ResponseMessage} from "@/common/constants";
 import prisma from "@/common/prisma-client";
 import {CategoryRequest} from "@/common/schemas";
-import {Nullable, CategoryWithProductTotal} from "@/common/types";
+import {CategoryWithProductTotal} from "@/common/types";
 import CategoryAlreadyExistError from "@/errors/category/category-already-exist";
 import CategoryDeletingError from "@/errors/category/category-deleting-error";
 import CategoryNotFoundError from "@/errors/category/category-not-found";
@@ -9,8 +9,8 @@ import type {Category} from "@prisma/client";
 
 const getCategoryByName = async (
     categoryName: string
-): Promise<Nullable<Category>> => {
-    const category: Nullable<Category> = await prisma.category.findFirst({
+): Promise<Category | null> => {
+    const category = await prisma.category.findFirst({
         where: {
             categoryName: categoryName,
         },
@@ -72,9 +72,7 @@ const getCategoryByID = async (
 const insertCategory = async (
     validPayload: CategoryRequest
 ): Promise<Category> => {
-    const categoryHolder: Nullable<Category> = await getCategoryByName(
-        validPayload.categoryName
-    );
+    const categoryHolder = await getCategoryByName(validPayload.categoryName);
 
     if (categoryHolder) {
         throw new CategoryAlreadyExistError(
@@ -95,9 +93,7 @@ const updateCategory = async (
     categoryID: string,
     validPayload: CategoryRequest
 ): Promise<Category> => {
-    const categoryHolder: Nullable<Category> = await getCategoryByName(
-        validPayload.categoryName
-    );
+    const categoryHolder = await getCategoryByName(validPayload.categoryName);
     if (categoryHolder) {
         throw new CategoryAlreadyExistError(
             ResponseMessage.CATEGORY_ALREADY_EXISTS
