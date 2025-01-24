@@ -59,7 +59,7 @@ const getProducts = async (req: Request, res: Response) => {
     const sale = Boolean(req.query.sale);
     const detail = Boolean(req.query.detail);
     const sortByPrice = req.query.sortByPrice as Sort;
-    const sortByName = req.query.sortByname as Sort;
+    const sortByName = req.query.sortByName as Sort;
     const optionsString = req.query.optionIDs as string;
     const minPrice = Number(req.query.minPrice) || 100000;
     const maxPrice = Number(req.query.maxPrice) || 100000000;

@@ -358,10 +358,11 @@ const getProductFullJoinList = async (params: {
     currentPage: number;
 }): Promise<ProductFullJoin[]> => {
     let query = `
-SELECT ft."productID", ft."itemID", ft."maxPrice"
+SELECT ft."productID", ft."itemID", ft."maxPrice", ft."productName"
 FROM (
       SELECT 
         gr."productID", 
+        gr."productName", 
         gr."itemID", 
         MAX(gr."afterDiscountPrice") as "maxPrice",
         ROW_NUMBER() OVER (PARTITION BY gr."productID" ORDER BY gr."itemID") AS rn
@@ -369,6 +370,7 @@ FROM (
         (
           SELECT 
             p."productID", 
+            p."productName", 
             pi."itemID",
             pi."price" * (100 - COALESCE(pi."discount", 0))/100 AS "afterDiscountPrice"
           FROM "Product" p
@@ -383,7 +385,7 @@ FROM (
         LEFT JOIN "ProductAttribute" pa ON gr."productID" = pa."productID"
         WHERE
             gr."afterDiscountPrice" BETWEEN ${params.minPrice} AND ${params.maxPrice}
-        GROUP BY gr."productID", gr."itemID"
+        GROUP BY gr."productID", gr."itemID", gr."productName"
             ${
                 params.optionIDs
                     ? `HAVING ARRAY_AGG(pa."optionID") @> ARRAY[${params.optionIDs.map((id) => `'${id}'::uuid`).join(", ")}]`
@@ -398,7 +400,7 @@ WHERE rn = 1
         orderByClauses.push(`"maxPrice" ${params.sortByPrice}`);
     }
     if (params.sortByName) {
-        orderByClauses.push(`p."productName" ${params.sortByName}`);
+        orderByClauses.push(`"productName" ${params.sortByName}`);
     }
     if (orderByClauses.length) {
         query += ` ORDER BY ${orderByClauses.join(", ")}`;
