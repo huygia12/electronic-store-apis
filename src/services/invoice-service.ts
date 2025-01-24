@@ -16,14 +16,14 @@ import {format} from "date-fns";
 
 const invoiceSizeLimit = 10;
 
-const getNumberOfInvoicesByDay = async (
+const getNumberOfInvoicesDoneByDay = async (
     date: Date = new Date()
 ): Promise<number> => {
     const startOfDay = new Date(date.setHours(0, 0, 0, 0));
     const endOfDay = new Date(date.setHours(23, 59, 59, 999));
     const invoices: number = await prisma.invoice.count({
         where: {
-            createdAt: {
+            doneAt: {
                 gte: startOfDay,
                 lte: endOfDay,
             },
@@ -64,7 +64,7 @@ const getNumberOfInvoices = async (params: {
     return amountOfInvoice;
 };
 
-const getInvoicesBetweenDate = async (
+const getInvoicesDoneBetweenDate = async (
     from: Date,
     to?: Date
 ): Promise<InvoiceFullJoin[]> => {
@@ -75,7 +75,7 @@ const getInvoicesBetweenDate = async (
 
     const invoices: InvoiceFullJoin[] = await prisma.invoice.findMany({
         where: {
-            createdAt: {
+            doneAt: {
                 gte: startOfDay,
                 lte: endOfDay,
             },
@@ -141,13 +141,13 @@ const getInvoice = async (
 };
 
 const getRevenueByDay = async (date: Date): Promise<number> => {
-    const invoices: InvoiceFullJoin[] = await getInvoicesBetweenDate(date);
+    const invoices: InvoiceFullJoin[] = await getInvoicesDoneBetweenDate(date);
     const revenue: number = invoices.reduce<number>((prev, curr) => {
         curr.invoiceProducts.map((product) => {
             prev =
                 prev +
                 product.quantity *
-                    (1 - (product.discount || 0)) *
+                    (1 - (product.discount || 0) / 100) *
                     product.price;
         });
         return prev;
@@ -285,7 +285,7 @@ const checkIfOrderTurnIntoInvoice = (
 
 export default {
     getProductsOutOfInvoice,
-    getNumberOfInvoicesByDay,
+    getNumberOfInvoicesByDay: getNumberOfInvoicesDoneByDay,
     getRevenueByDay,
     getInvoices,
     insertOrder,
