@@ -147,11 +147,13 @@ const reviewCreationSchema = zod.object({
     parentID: blankCheck().nullable(),
 });
 
-const slideUpdateSchema = zod.object({
-    url: blankCheck(),
-    ref: blankCheck(),
-    index: zod.number(),
-});
+const slidesUpdateSchema = zod.array(
+    zod.object({
+        url: blankCheck(),
+        ref: blankCheck().nullable(),
+        index: zod.number().min(1),
+    })
+);
 
 const bannerUpdateSchema = zod.object({
     newBanner: zod.string().nullable(),
@@ -211,7 +213,7 @@ export type ReviewCreationRequest = z.infer<typeof reviewCreationSchema>;
 
 export type ReviewDeletionRequest = z.infer<typeof reviewDeletionSchema>;
 
-export type SlideUpdateRequest = z.infer<typeof slideUpdateSchema>;
+export type SlidesUpdateRequest = z.infer<typeof slidesUpdateSchema>;
 
 export type BannerUpdateRequest = z.infer<typeof bannerUpdateSchema>;
 
@@ -269,7 +271,7 @@ export default {
         [RequestMethod.PATCH]: orderUpdateSchema,
     },
     ["/stores/:id/slides"]: {
-        [RequestMethod.PATCH]: slideUpdateSchema,
+        [RequestMethod.PATCH]: slidesUpdateSchema,
     },
     ["/stores/:id/banners"]: {
         [RequestMethod.PATCH]: bannerUpdateSchema,

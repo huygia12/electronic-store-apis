@@ -15,14 +15,6 @@ const expressSchemaValidator = (
     }
 
     return (req, res, next) => {
-        console.debug(
-            `[schema validator] request body : ${JSON.stringify(
-                req.body,
-                null,
-                2
-            )}`
-        );
-
         const schema = schemaObject[req.method];
         if (!schema) {
             throw new Error(
