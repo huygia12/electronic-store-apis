@@ -55,6 +55,7 @@ const getInvoices = async (req: Request, res: Response) => {
     const totalInvoices = await invoiceService.getNumberOfInvoices({
         from: date,
         to: date,
+        userID: userID,
         status: statusParam as invoiceStatus,
         invoiceID: invoiceID,
         userName: userName,
