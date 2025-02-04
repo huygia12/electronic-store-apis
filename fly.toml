@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for electronic-store-apis-faqjca on 2025-02-04T22:57:56Z
+# fly.toml app configuration file generated for electronic-store-apis on 2025-02-04T23:28:33Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'electronic-store-apis-faqjca'
+app = 'electronic-store-apis'
 primary_region = 'sin'
 
 [build]
