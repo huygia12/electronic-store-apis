@@ -4,6 +4,7 @@ import type {
     Category,
     Invoice,
     InvoiceProduct,
+    invoiceStatus,
     ItemImage,
     Product,
     ProductItem,
@@ -164,6 +165,10 @@ type ReviewFullJoin = Review & {
 interface ClientEvents {
     "product:join": (payload: {productID: string}) => void;
     "product:leave": (payload: {productID: string}) => void;
+    "user:join": (payload: {userID: string}) => void;
+    "admin:join": () => void;
+    "admin:leave": () => void;
+    "user:leave": (payload: {userID: string}) => void;
     "review:create": (
         payload: ReviewCreationRequest,
         callback: (status: SocketIOError | undefined) => void
@@ -176,12 +181,22 @@ interface ClientEvents {
         payload: {userID: string; banned: boolean},
         callback: (error: SocketIOError | undefined) => void
     ) => void;
+    "invoice:new": () => void;
+    "invoice:update-status": (payload: {
+        userID: string;
+        newStatus: invoiceStatus;
+    }) => void;
 }
 
 interface ServerEvents {
     "review:create": (payload: {review: ReviewFullJoin}) => void;
     "review:delete": (payload: {review: Review}) => void;
-    "user:ban": (payload: {userID: string}) => void;
+    "user:ban": () => void;
+    "invoice:new": (payload: {numberOfNewInvoices: number}) => void;
+    "invoice:update-status": (payload: {
+        numberOfNewInvoices: number;
+        newStatus: invoiceStatus;
+    }) => void;
 }
 
 export type {

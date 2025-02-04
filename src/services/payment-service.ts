@@ -6,7 +6,8 @@ import moment from "moment";
 
 const getZaloPayemtOrder = (
     invoiceID: string,
-    userID: string
+    userID: string,
+    invoiceAmount: number
 ): ZaloPaymentOrder => {
     const embed_data = {
         redirecturl: `${config.CLIENT_DOMAIN}/?paidInvoiceID=${invoiceID}&userID=${userID}`,
@@ -21,7 +22,7 @@ const getZaloPayemtOrder = (
         app_time: Date.now(),
         item: JSON.stringify([invoiceID]),
         embed_data: JSON.stringify(embed_data),
-        amount: 50000,
+        amount: invoiceAmount,
         description: `GH Shop - Payment for the order #${transID}`,
         bank_code: "",
         callback_url: `${config.APP_DOMAIN}/v1/invoices/callback`,

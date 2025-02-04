@@ -6,6 +6,7 @@ import productController from "@/controllers/product-controller";
 import {ClientEvents, ServerEvents} from "@/common/types";
 import userController from "@/controllers/user-controller";
 import {options} from "@/common/cors-config";
+import invoiceController from "@/controllers/invoice-controller";
 
 interface Option {
     debug: boolean;
@@ -36,7 +37,7 @@ class SocketServer {
         //     next();
         // });
         this._io.on(`connection`, (socket) => {
-            this.debug(`An user with socket ID of ${socket.id} connected`);
+            console.info(`An user with socket ID of ${socket.id} connected`);
 
             reviewController.registerReviewSocketHandlers(this._io, socket);
 
@@ -44,8 +45,10 @@ class SocketServer {
 
             userController.registerUserSocketHandlers(this._io, socket);
 
+            invoiceController.registerInvoiceSocketHandlers(this._io, socket);
+
             socket.on(`disconnect`, () => {
-                this.debug(
+                console.info(
                     `An user with socket ID of ${socket.id} disconnected`
                 );
             });
@@ -64,10 +67,6 @@ class SocketServer {
 
             console.log("[socket server]: Stopped");
         });
-    }
-
-    private debug(msg: string): void {
-        this._debug && console.debug(`[socket server]: ${msg}`);
     }
 }
 

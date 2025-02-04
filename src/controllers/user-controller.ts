@@ -3,11 +3,13 @@ import {StatusCodes} from "http-status-codes";
 import jwtService from "../services/jwt-service";
 import userService from "../services/user-service";
 import {
+    ForgotPasswordRequest,
     LoginRequest,
     PasswordUpdateRequest,
     SignupRequest,
     UserBanningRequest,
     UserUpdateRequest,
+    VerifyOTPRequest,
 } from "@/common/schemas";
 import {
     ClientEvents,
@@ -205,10 +207,56 @@ const updateUserPassword = async (req: Request, res: Response) => {
     });
 };
 
+const forgotPassword = async (req: Request, res: Response) => {
+    const payload = req.body as ForgotPasswordRequest;
+
+    const otp = await userService.generateOTP(payload.email);
+    const htmlContent = mailService.getOTPHTMLContent(otp);
+    mailService.sendEmail(payload.email, `Mã OTP`, htmlContent);
+
+    res.status(StatusCodes.OK).json({
+        message: ResponseMessage.SUCCESS,
+    });
+};
+
+const verifyOTP = async (req: Request, res: Response) => {
+    const payload = req.body as VerifyOTPRequest;
+
+    const newPassword = await userService.verifyOTP(payload.email, payload.otp);
+
+    if (newPassword) {
+        const htmlContent = mailService.getNewPasswordHTMLContent(newPassword);
+        mailService.sendEmail(payload.email, `Mật khẩu mới`, htmlContent);
+    }
+
+    res.status(StatusCodes.OK).json({
+        message: ResponseMessage.SUCCESS,
+        info: {
+            result: newPassword !== null,
+        },
+    });
+};
+
 const registerUserSocketHandlers = (
     io: Server<ClientEvents, ServerEvents>,
     socket: Socket<ClientEvents, ServerEvents>
 ) => {
+    socket.on(`user:join`, (payload) => {
+        socket.join(`user:${payload.userID}`);
+    });
+
+    socket.on(`user:leave`, (payload) => {
+        socket.leave(`user:${payload.userID}`);
+    });
+
+    socket.on(`admin:join`, () => {
+        socket.join(`admin:room`);
+    });
+
+    socket.on(`admin:leave`, () => {
+        socket.leave(`admin:room`);
+    });
+
     const banUser = async (payload: UserBanningRequest, callback: unknown) => {
         if (typeof callback !== "function") {
             //not an acknowledgement
@@ -226,9 +274,7 @@ const registerUserSocketHandlers = (
                 isBanned: payload.banned,
             });
 
-            io.emit("user:ban", {
-                userID: payload.userID,
-            });
+            io.to(`user:${payload.userID}`).emit("user:ban");
             callback(undefined);
         } catch (error) {
             if (error instanceof Error) {
@@ -258,4 +304,6 @@ export default {
     deleteUser,
     registerUserSocketHandlers,
     updateUserPassword,
+    forgotPassword,
+    verifyOTP,
 };

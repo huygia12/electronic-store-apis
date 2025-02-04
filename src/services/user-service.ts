@@ -15,6 +15,7 @@ import WrongPasswordError from "@/errors/user/wrong-password";
 import jwtService from "./jwt-service";
 import UserIsBanned from "@/errors/user/user-is-banned";
 import InvalidTokenError from "@/errors/auth/invalid-token";
+import * as crypto from "crypto";
 
 const saltOfRound = 10;
 const userSizeLimit = 10;
@@ -131,7 +132,7 @@ const login = async (
             await deleteRefreshToken(prevRT, userDecoded.userID);
         }
     } catch (error: any) {
-        console.debug(`[user service]: login : ${JSON.stringify(error)}`);
+        console.error(`[user service]: login : ${JSON.stringify(error)}`);
     }
 
     const validUser: UserDTO = await getValidUserDTO(
@@ -460,6 +461,80 @@ const updatePassword = async (
     });
 };
 
+const otpStorage = new Map<
+    string,
+    {otp: string; numberOfCheckingTime: number; timeout: NodeJS.Timeout}
+>();
+const generateOTP = async (email: string): Promise<string> => {
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+        throw new UserNotFoundError(ResponseMessage.USER_NOT_FOUND);
+    }
+
+    if (otpStorage.has(email)) {
+        clearTimeout(otpStorage.get(email)!.timeout);
+        otpStorage.delete(email);
+    }
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const numberOfCheckingTime = 5;
+    const timeout = setTimeout(
+        () => {
+            otpStorage.delete(email);
+        },
+        2 * 60 * 1000 // 2 minutes
+    );
+
+    otpStorage.set(email, {otp, numberOfCheckingTime, timeout});
+
+    return otp;
+};
+
+const verifyOTP = async (
+    email: string,
+    otp: string
+): Promise<string | null> => {
+    const entry = otpStorage.get(email);
+    if (!entry || entry.otp !== otp) {
+        if (entry) {
+            entry.numberOfCheckingTime--;
+            if (entry.numberOfCheckingTime == 0) {
+                banUserWithEmail(email);
+                clearTimeout(entry.timeout);
+                otpStorage.delete(email);
+            }
+        }
+        return null;
+    }
+
+    const newPassword = crypto.randomInt(100000, 999999).toString();
+
+    // otp is verified from now on
+    await prisma.user.update({
+        where: {
+            email: email,
+        },
+        data: {
+            password: hashSync(newPassword, saltOfRound),
+        },
+    });
+
+    clearTimeout(entry.timeout);
+    otpStorage.delete(email);
+    return newPassword;
+};
+
+const banUserWithEmail = async (email: string) => {
+    await prisma.user.update({
+        where: {
+            email: email,
+        },
+        data: {
+            isBanned: true,
+        },
+    });
+};
+
 export default {
     login,
     logout,
@@ -472,4 +547,6 @@ export default {
     getNumberOfUsers,
     deleteUserByID,
     updatePassword,
+    generateOTP,
+    verifyOTP,
 };

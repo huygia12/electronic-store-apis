@@ -9,7 +9,7 @@ const signupForNotification = async (email: string) => {
         });
     } catch (error: any) {
         if (error.code === "P2002") {
-            console.debug(
+            console.info(
                 "[notification-service] singupForNotification : Email already exists, skipping insertion."
             );
         } else {

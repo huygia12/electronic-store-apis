@@ -67,6 +67,19 @@ const passwordUpdateSchema = zod
     })
     .strict();
 
+const forgotPasswordSchema = zod
+    .object({
+        email: zod.string().email(),
+    })
+    .strict();
+
+const verifyOTPSchema = zod
+    .object({
+        email: zod.string().email(),
+        otp: zod.string().length(6),
+    })
+    .strict();
+
 const productItemSchema = zod
     .object({
         thump: blankCheck(),
@@ -221,6 +234,10 @@ export type OrderUpdateRequest = z.infer<typeof orderUpdateSchema>;
 
 export type SignupForNotification = z.infer<typeof signupForNotificationSchema>;
 
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+
+export type VerifyOTPRequest = z.infer<typeof verifyOTPSchema>;
+
 export default {
     ["/attributes"]: {
         [RequestMethod.POST]: attributeTypeSchema,
@@ -257,6 +274,12 @@ export default {
     },
     ["/users/:id/password"]: {
         [RequestMethod.PATCH]: passwordUpdateSchema,
+    },
+    ["/users/forgot-password"]: {
+        [RequestMethod.POST]: forgotPasswordSchema,
+    },
+    ["/users/verify-otp"]: {
+        [RequestMethod.POST]: verifyOTPSchema,
     },
     ["/products"]: {
         [RequestMethod.POST]: productSchema,

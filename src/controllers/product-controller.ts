@@ -75,6 +75,7 @@ const getProducts = async (req: Request, res: Response) => {
             categoryID: categoryID,
             providerID: providerID,
             searchingName: searching,
+            limit: limit,
             currentPage: currentPage,
         });
     } else {
@@ -120,16 +121,10 @@ const registerProductSocketHandlers = (
 ) => {
     socket.on(`product:join`, (payload) => {
         socket.join(`product:${payload.productID}`);
-        console.debug(
-            `[socket server]: join user to product room : { socketID : ${socket.id}}`
-        );
     });
 
     socket.on(`product:leave`, (payload) => {
         socket.leave(`product:${payload.productID}`);
-        console.debug(
-            `[socket server]: user leaving from product : { socketID : ${socket.id}}`
-        );
     });
 };
 

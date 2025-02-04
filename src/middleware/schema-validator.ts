@@ -25,14 +25,6 @@ const expressSchemaValidator = (
         try {
             schema.parse(req.body);
         } catch (error: unknown) {
-            console.debug(
-                `[schema validator] zod detect errors : ${JSON.stringify(
-                    error,
-                    null,
-                    2
-                )}`
-            );
-
             if (error instanceof ZodError) {
                 const zodError: ValidationError = {
                     status: "failed",
@@ -51,8 +43,6 @@ const expressSchemaValidator = (
             );
         }
 
-        // validation successful
-        console.debug(`[schema validator] succeed}`);
         return next();
     };
 };
@@ -72,14 +62,6 @@ const socketIOSchemaValidator = (
     try {
         schema.parse(payload);
     } catch (error: unknown) {
-        console.debug(
-            `[schema validator] zod detect errors : ${JSON.stringify(
-                error,
-                null,
-                2
-            )}`
-        );
-
         if (error instanceof ZodError) {
             const zodError: ValidationError = {
                 status: "failed",
@@ -104,8 +86,6 @@ const socketIOSchemaValidator = (
         return false;
     }
 
-    // validation successful
-    console.debug(`[schema validator] socket payload valid`);
     return true;
 };
 
