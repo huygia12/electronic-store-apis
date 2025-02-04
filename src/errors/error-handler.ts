@@ -9,7 +9,7 @@ const errorHandler: ErrorRequestHandler = (
     res: Response,
     next: NextFunction
 ) => {
-    console.debug(`[error handler] ${error.name} : ${error.stack}`);
+    console.error(`[error handler] ${error.name} : ${error.stack}`);
 
     if (error instanceof ResponsableError) {
         return res.status(error.StatusCode).json({

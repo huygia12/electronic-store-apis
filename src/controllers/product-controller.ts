@@ -11,9 +11,6 @@ const createProduct = async (req: Request, res: Response) => {
 
     await productService.createProduct(productCreateReq);
 
-    console.debug(
-        `[product controller]: create product ${productCreateReq.productName} successfull`
-    );
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
     });
@@ -46,7 +43,6 @@ const getProduct = async (req: Request, res: Response) => {
     const product: ProductFullJoin =
         await productService.getProductFullJoinWithID(productID);
 
-    console.debug(`[product controller]: get product successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: product,
@@ -63,7 +59,7 @@ const getProducts = async (req: Request, res: Response) => {
     const sale = Boolean(req.query.sale);
     const detail = Boolean(req.query.detail);
     const sortByPrice = req.query.sortByPrice as Sort;
-    const sortByName = req.query.sortByname as Sort;
+    const sortByName = req.query.sortByName as Sort;
     const optionsString = req.query.optionIDs as string;
     const minPrice = Number(req.query.minPrice) || 100000;
     const maxPrice = Number(req.query.maxPrice) || 100000000;
@@ -79,6 +75,7 @@ const getProducts = async (req: Request, res: Response) => {
             categoryID: categoryID,
             providerID: providerID,
             searchingName: searching,
+            limit: limit,
             currentPage: currentPage,
         });
     } else {
@@ -109,7 +106,6 @@ const getProducts = async (req: Request, res: Response) => {
         exceptID: exceptID,
     });
 
-    console.debug(`[product controller]: get products successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: {
@@ -125,16 +121,10 @@ const registerProductSocketHandlers = (
 ) => {
     socket.on(`product:join`, (payload) => {
         socket.join(`product:${payload.productID}`);
-        console.debug(
-            `[socket server]: join user to product room : { socketID : ${socket.id}}`
-        );
     });
 
     socket.on(`product:leave`, (payload) => {
         socket.leave(`product:${payload.productID}`);
-        console.debug(
-            `[socket server]: user leaving from product : { socketID : ${socket.id}}`
-        );
     });
 };
 

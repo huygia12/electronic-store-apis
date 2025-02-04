@@ -67,6 +67,19 @@ const passwordUpdateSchema = zod
     })
     .strict();
 
+const forgotPasswordSchema = zod
+    .object({
+        email: zod.string().email(),
+    })
+    .strict();
+
+const verifyOTPSchema = zod
+    .object({
+        email: zod.string().email(),
+        otp: zod.string().length(6),
+    })
+    .strict();
+
 const productItemSchema = zod
     .object({
         thump: blankCheck(),
@@ -147,11 +160,13 @@ const reviewCreationSchema = zod.object({
     parentID: blankCheck().nullable(),
 });
 
-const slideUpdateSchema = zod.object({
-    url: blankCheck(),
-    ref: blankCheck(),
-    index: zod.number(),
-});
+const slidesUpdateSchema = zod.array(
+    zod.object({
+        url: blankCheck(),
+        ref: blankCheck().nullable(),
+        index: zod.number().min(1),
+    })
+);
 
 const bannerUpdateSchema = zod.object({
     newBanner: zod.string().nullable(),
@@ -174,6 +189,12 @@ const banUserSchema = zod.object({
     userID: blankCheck(),
     banned: zod.boolean(),
 });
+
+const signupForNotificationSchema = zod
+    .object({
+        email: z.string().email(),
+    })
+    .strict();
 
 export type AttributeTypeRequest = z.infer<typeof attributeTypeSchema>;
 
@@ -205,11 +226,17 @@ export type ReviewCreationRequest = z.infer<typeof reviewCreationSchema>;
 
 export type ReviewDeletionRequest = z.infer<typeof reviewDeletionSchema>;
 
-export type SlideUpdateRequest = z.infer<typeof slideUpdateSchema>;
+export type SlidesUpdateRequest = z.infer<typeof slidesUpdateSchema>;
 
 export type BannerUpdateRequest = z.infer<typeof bannerUpdateSchema>;
 
 export type OrderUpdateRequest = z.infer<typeof orderUpdateSchema>;
+
+export type SignupForNotification = z.infer<typeof signupForNotificationSchema>;
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+
+export type VerifyOTPRequest = z.infer<typeof verifyOTPSchema>;
 
 export default {
     ["/attributes"]: {
@@ -248,6 +275,12 @@ export default {
     ["/users/:id/password"]: {
         [RequestMethod.PATCH]: passwordUpdateSchema,
     },
+    ["/users/forgot-password"]: {
+        [RequestMethod.POST]: forgotPasswordSchema,
+    },
+    ["/users/verify-otp"]: {
+        [RequestMethod.POST]: verifyOTPSchema,
+    },
     ["/products"]: {
         [RequestMethod.POST]: productSchema,
     },
@@ -261,13 +294,16 @@ export default {
         [RequestMethod.PATCH]: orderUpdateSchema,
     },
     ["/stores/:id/slides"]: {
-        [RequestMethod.PATCH]: slideUpdateSchema,
+        [RequestMethod.PATCH]: slidesUpdateSchema,
     },
     ["/stores/:id/banners"]: {
         [RequestMethod.PATCH]: bannerUpdateSchema,
     },
     ["/stores/:id"]: {
         [RequestMethod.PUT]: storeUpdateSchema,
+    },
+    ["/notification"]: {
+        [RequestMethod.POST]: signupForNotificationSchema,
     },
     ["review"]: {
         ["create"]: reviewCreationSchema,

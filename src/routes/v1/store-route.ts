@@ -10,14 +10,13 @@ const router = express.Router();
 router.use(cors(options));
 
 router.get("/", storeController.getStore);
-router.get("/:id/slides", storeController.getSliderImages);
-// router.patch(
-//     "/:id/slides",
-//     authMiddleware.isAuthorized,
-//     authMiddleware.isAdmin,
-//     expressSchemaValidator("/stores/:id/slides"),
-//     storeController
-// );
+router.patch(
+    "/:id/slides",
+    authMiddleware.isAuthorized,
+    authMiddleware.isAdmin,
+    expressSchemaValidator("/stores/:id/slides"),
+    storeController.updateSlides
+);
 router.patch(
     "/:id/banners",
     authMiddleware.isAuthorized,

@@ -32,6 +32,16 @@ router.patch(
     expressSchemaValidator("/users/:id/password"),
     userController.updateUserPassword
 );
+router.post(
+    "/forgot-password",
+    expressSchemaValidator("/users/forgot-password"),
+    userController.forgotPassword
+);
+router.post(
+    "/verify-otp",
+    expressSchemaValidator("/users/verify-otp"),
+    userController.verifyOTP
+);
 router.delete("/:id", authMiddleware.isAuthorized, userController.deleteUser);
 router.get("/:id", authMiddleware.isAuthorized, userController.getUser);
 router.get(

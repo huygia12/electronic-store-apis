@@ -1,6 +1,6 @@
 import prisma from "@/common/prisma-client";
 import {ReviewCreationRequest, ReviewDeletionRequest} from "@/common/schemas";
-import {Nullable, ReviewFullJoin} from "@/common/types";
+import {ReviewFullJoin} from "@/common/types";
 import {Review} from "@prisma/client";
 
 const makeReview = async (
@@ -116,7 +116,7 @@ const getReviewsByProductID = async (
     return reviews;
 };
 
-const getReview = async (reviewID: string): Promise<Nullable<Review>> => {
+const getReview = async (reviewID: string): Promise<Review | null> => {
     const review = await prisma.review.findFirst({
         where: {
             reviewID: reviewID,

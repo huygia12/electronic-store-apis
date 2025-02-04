@@ -1,26 +1,17 @@
-import {BannerUpdateRequest} from "@/common/schemas";
+import {BannerUpdateRequest, SlidesUpdateRequest} from "@/common/schemas";
 import prisma from "@/common/prisma-client";
-import {Nullable, StoreFullJoin} from "@/common/types";
-import {SlideShow} from "@prisma/client";
+import {SlideShow, Store} from "@prisma/client";
 import StoreNotFoundError from "@/errors/store/store-not-found";
 import {ResponseMessage} from "@/common/constants";
 
-const getSlides = async (storeID: string): Promise<SlideShow[]> => {
-    const slides = await prisma.slideShow.findMany({
-        where: {
-            storeID: storeID,
-        },
-    });
+const getSlides = async (): Promise<SlideShow[]> => {
+    const slides = await prisma.slideShow.findMany();
 
     return slides;
 };
 
-const getStore = async (): Promise<Nullable<StoreFullJoin>> => {
-    const store = await prisma.store.findFirst({
-        include: {
-            slideShows: true,
-        },
-    });
+const getStore = async (): Promise<Store | null> => {
+    const store = await prisma.store.findFirst();
     return store;
 };
 
@@ -32,7 +23,6 @@ const updateBanner = async (
         where: {storeID: storeID},
     });
     if (!store) {
-        console.debug(`[store service]: Store not found`);
         throw new StoreNotFoundError(ResponseMessage.STORE_NOT_FOUND);
     }
 
@@ -53,33 +43,10 @@ const updateBanner = async (
     }
 };
 
-// const updateBanner = async (
-//     storeID: string,
-//     validPayload: BannerUpdateRequest
-// ) => {
-//     const store = await prisma.store.findFirst({
-//         where: {storeID: storeID},
-//     });
-//     if (!store) {
-//         console.debug(`[store service]: Store not found`);
-//         throw new StoreNotFoundError(ResponseMessage.STORE_NOT_FOUND);
-//     }
+const updateSlides = async (validPayload: SlidesUpdateRequest) => {
+    await prisma.slideShow.deleteMany();
 
-//     if (validPayload.position === `left`) {
-//         await prisma.store.update({
-//             where: {storeID: storeID},
-//             data: {
-//                 leftBanner: validPayload.newBanner,
-//             },
-//         });
-//     } else {
-//         await prisma.store.update({
-//             where: {storeID: storeID},
-//             data: {
-//                 rightBanner: validPayload.newBanner,
-//             },
-//         });
-//     }
-// };
+    await prisma.slideShow.createMany({data: validPayload});
+};
 
-export default {getSlides, getStore, updateBanner};
+export default {getSlides, getStore, updateBanner, updateSlides};

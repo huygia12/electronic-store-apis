@@ -7,6 +7,8 @@ type Config = {
     RT_KEY: string;
     APP_DOMAIN: string;
     CLIENT_DOMAIN: string;
+    EMAIL: string;
+    GMAIL_PASSWORD: string;
 };
 
 const localhost = "http://127.0.0.1";
@@ -34,6 +36,8 @@ const config: Config = {
     APP_DOMAIN: process.env.APP_DOMAIN || `${localhost}:${process.env.PORT}`,
     CLIENT_DOMAIN:
         process.env.CLIENT_DOMAIN || `${localhost}:${process.env.CLIENT_PORT}`,
+    EMAIL: `${process.env.EMAIL}`,
+    GMAIL_PASSWORD: `${process.env.GMAIL_PASSWORD}`,
 };
 
 export default config;

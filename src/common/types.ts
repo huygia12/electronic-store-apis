@@ -4,22 +4,16 @@ import type {
     Category,
     Invoice,
     InvoiceProduct,
+    invoiceStatus,
     ItemImage,
     Product,
     ProductItem,
     Provider,
     Review,
-    SlideShow,
-    Store,
     userRole,
 } from "@prisma/client";
 import {ReviewCreationRequest} from "./schemas";
 import {SocketIOError} from "@/errors/custom-error";
-
-//Ultility type
-type Nullable<T> = T | null;
-
-type Optional<T> = T | undefined;
 
 //Attributes
 type Attribute = AttributeType & {attributeOptions: AttributeOption[]};
@@ -67,16 +61,16 @@ interface ProductStatus {
 }
 
 type ProductWithSpecificItem = {
-    discount: Nullable<number>;
+    discount: number | null;
     price: number;
     productName: string;
     quantity: number;
     productCode: string;
     color: string;
-    storage: Nullable<string>;
+    storage: string | null;
     categoryName: string;
     providerName: string;
-    thump: Nullable<string>;
+    thump: string | null;
     itemID: string;
     productID: string;
 };
@@ -86,9 +80,9 @@ interface UserDTO {
     userID: string;
     userName: string;
     email: string;
-    phoneNumber: Nullable<string>;
-    avatar: Nullable<string>;
-    isBanned: Nullable<boolean>;
+    phoneNumber: string | null;
+    avatar: string | null;
+    isBanned: boolean | null;
     role: userRole;
     createdAt: Date;
     updateAt: Date;
@@ -99,9 +93,9 @@ interface UserResponseDTO {
     userID: string;
     userName: string;
     email: string;
-    phoneNumber: Nullable<string>;
-    avatar: Nullable<string>;
-    isBanned: Nullable<boolean>;
+    phoneNumber: string | null;
+    avatar: string | null;
+    isBanned: boolean | null;
     role: userRole;
     createdAt: Date;
     updateAt: Date;
@@ -111,7 +105,7 @@ interface UserInTokenPayload {
     userID: string;
     userName: string;
     email: string;
-    avatar: Nullable<string>;
+    avatar: string | null;
     role: userRole;
 }
 
@@ -151,7 +145,7 @@ type ReviewFullJoin = Review & {
         user: {
             userID: string;
             userName: string;
-            avatar: Nullable<string>;
+            avatar: string | null;
             role: userRole;
             createdAt: Date;
         };
@@ -160,43 +154,52 @@ type ReviewFullJoin = Review & {
     user: {
         userID: string;
         userName: string;
-        avatar: Nullable<string>;
+        avatar: string | null;
         role: userRole;
         createdAt: Date;
     };
     product: {productName: string};
 };
 
-//Store
-type StoreFullJoin = Store & {slideShows: SlideShow[]};
-
 //Events
 interface ClientEvents {
     "product:join": (payload: {productID: string}) => void;
     "product:leave": (payload: {productID: string}) => void;
+    "user:join": (payload: {userID: string}) => void;
+    "admin:join": () => void;
+    "admin:leave": () => void;
+    "user:leave": (payload: {userID: string}) => void;
     "review:create": (
         payload: ReviewCreationRequest,
-        callback: (status: Optional<SocketIOError>) => void
+        callback: (status: SocketIOError | undefined) => void
     ) => void;
     "review:delete": (
         payload: {reviewID: string},
-        callback: (status: Optional<SocketIOError>) => void
+        callback: (status: SocketIOError | undefined) => void
     ) => void;
     "user:ban": (
         payload: {userID: string; banned: boolean},
-        callback: (error: Optional<SocketIOError>) => void
+        callback: (error: SocketIOError | undefined) => void
     ) => void;
+    "invoice:new": () => void;
+    "invoice:update-status": (payload: {
+        userID: string;
+        newStatus: invoiceStatus;
+    }) => void;
 }
 
 interface ServerEvents {
     "review:create": (payload: {review: ReviewFullJoin}) => void;
     "review:delete": (payload: {review: Review}) => void;
-    "user:ban": (payload: {userID: string}) => void;
+    "user:ban": () => void;
+    "invoice:new": (payload: {numberOfNewInvoices: number}) => void;
+    "invoice:update-status": (payload: {
+        numberOfNewInvoices: number;
+        newStatus: invoiceStatus;
+    }) => void;
 }
 
 export type {
-    Nullable,
-    Optional,
     Attribute,
     ProviderWithProductTotal,
     CategoryWithProductTotal,
@@ -215,6 +218,5 @@ export type {
     ClientEvents,
     ServerEvents,
     ReviewFullJoin,
-    StoreFullJoin,
     ItemDictionary,
 };

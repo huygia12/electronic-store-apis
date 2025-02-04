@@ -1,9 +1,4 @@
-import {
-    ClientEvents,
-    Nullable,
-    ReviewFullJoin,
-    ServerEvents,
-} from "@/common/types";
+import {ClientEvents, ReviewFullJoin, ServerEvents} from "@/common/types";
 import {Server, Socket} from "socket.io";
 import reviewService from "@/services/review-service";
 import {ResponseMessage} from "@/common/constants";
@@ -18,7 +13,6 @@ const getReviews = async (req: Request, res: Response) => {
     const reviews: ReviewFullJoin[] =
         await reviewService.getReviewsByProductID(productID);
 
-    console.debug(`[review controller] getReviewsByProductID : successfully`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: reviews,
@@ -52,7 +46,6 @@ const registerReviewSocketHandlers = (
                 review: review,
             });
             callback(undefined);
-            console.debug(`[review controller] create review : succeed`);
         } catch (error) {
             if (error instanceof Error) {
                 console.error(`[error handler] ${error.name} : ${error.stack}`);
@@ -84,7 +77,7 @@ const registerReviewSocketHandlers = (
         if (!validateResult) return;
 
         try {
-            const review: Nullable<Review> = await reviewService.getReview(
+            const review: Review | null = await reviewService.getReview(
                 payload.reviewID
             );
             if (!review) {
@@ -101,7 +94,6 @@ const registerReviewSocketHandlers = (
                 review: review,
             });
             callback(undefined);
-            console.debug(`[review controller] delete review : succeed`);
         } catch (error) {
             if (error instanceof Error) {
                 console.error(`[error handler] ${error.name} : ${error.stack}`);

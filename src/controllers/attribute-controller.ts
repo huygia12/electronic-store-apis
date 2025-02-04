@@ -14,8 +14,6 @@ const createAttributeOption = async (req: Request, res: Response) => {
         newAttributeOption
     );
 
-    console.debug(`[attribute controller]: 
-        Attribute option: ${newAttributeOption} has been added successfull`);
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
         info: attributeOption,
@@ -33,8 +31,6 @@ const updateAttributeOption = async (req: Request, res: Response) => {
         attributeOptionUpdateReq
     );
 
-    console.debug(`[attribute controller]: 
-        Attribute option: upate attribute option with id ${attributeOptionUpdateReq.optionValue} successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: attributeOption,
@@ -43,12 +39,8 @@ const updateAttributeOption = async (req: Request, res: Response) => {
 
 const deleteAttributeOption = async (req: Request, res: Response) => {
     const optionID = req.params.optionID as string;
-    const typeID = req.params.typeID as string;
 
-    await attributeService.deleteAttributeOption(optionID, typeID);
-    console.debug(
-        `[attribute controller]: Attribute option: delete option successfull`
-    );
+    await attributeService.deleteAttributeOption(optionID);
     res.status(StatusCodes.OK).json({
         message: "Delete attribute option successfull",
     });
@@ -63,8 +55,6 @@ const createAttributeType = async (req: Request, res: Response) => {
 
     const payload = await attributeService.getAttributeByID(typeID);
 
-    console.debug(`[attribute controller]: 
-        Attribute type: ${createAttributeTypeReq.typeValue} has been added successfull`);
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
         info: payload,
@@ -79,8 +69,6 @@ const updateAttributeType = async (req: Request, res: Response) => {
 
     const payload = await attributeService.getAttributeByID(typeID);
 
-    console.debug(`[attribute controller]: 
-        Attribute type: update to ${attributeTypeReq.typeValue} successfull`);
     res.status(StatusCodes.OK).json({
         message: "Update attribute type success",
         info: payload,
@@ -92,7 +80,6 @@ const deleteAttributeType = async (req: Request, res: Response) => {
 
     await attributeService.deleteAttributeType(typeID);
 
-    console.debug(`[attribute controller]: Attribute type: delete successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
     });
@@ -104,17 +91,19 @@ const getAttributes = async (req: Request, res: Response) => {
 
     let optionIDs: string[] = [];
     if (categoryID || providerID) {
-        optionIDs = await attributeService.getProductAttributesAfterFilter({
-            providerID: providerID,
-            categoryID: categoryID,
-        });
+        optionIDs =
+            await attributeService.getProductAttributesBelongToProviderAndCategory(
+                {
+                    providerID: providerID,
+                    categoryID: categoryID,
+                }
+            );
     }
 
     const attributes: Attribute[] = await attributeService.getAttributes(
-        optionIDs.length === 0 ? undefined : optionIDs
+        providerID || categoryID ? optionIDs : undefined
     );
 
-    console.debug(`[attribute controller]: get attributes successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: attributes,

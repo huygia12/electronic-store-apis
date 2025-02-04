@@ -1,21 +1,8 @@
 import {ResponseMessage} from "@/common/constants";
-import {BannerUpdateRequest} from "@/common/schemas";
+import {BannerUpdateRequest, SlidesUpdateRequest} from "@/common/schemas";
 import storeService from "@/services/store-service";
-import {SlideShow} from "@prisma/client";
 import {Request, Response} from "express";
 import {StatusCodes} from "http-status-codes";
-
-const getSliderImages = async (req: Request, res: Response) => {
-    const storeID = req.params.storeID as string;
-
-    const payload: SlideShow[] = await storeService.getSlides(storeID);
-
-    console.debug(`[store controller]: get slides successfull`);
-    res.status(StatusCodes.OK).json({
-        message: ResponseMessage.SUCCESS,
-        info: payload,
-    });
-};
 
 const updateBanner = async (req: Request, res: Response) => {
     const storeID = req.params.id as string;
@@ -30,20 +17,32 @@ const updateBanner = async (req: Request, res: Response) => {
 
     await storeService.updateBanner(storeID, bannerUpdateRequest);
 
-    console.debug(`[store controller]: update banner successfull`);
+    res.status(StatusCodes.OK).json({
+        message: ResponseMessage.SUCCESS,
+    });
+};
+
+const updateSlides = async (req: Request, res: Response) => {
+    const slides = req.body as SlidesUpdateRequest;
+
+    await storeService.updateSlides(slides);
+
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
     });
 };
 
 const getStore = async (req: Request, res: Response) => {
-    const payload = await storeService.getStore();
+    const store = await storeService.getStore();
+    const slides = await storeService.getSlides();
 
-    console.debug(`[store controller]: get store successfull`);
     res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
-        info: payload,
+        info: {
+            store: store,
+            slides: slides,
+        },
     });
 };
 
-export default {getSliderImages, getStore, updateBanner};
+export default {getStore, updateBanner, updateSlides};

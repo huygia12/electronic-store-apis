@@ -1,5 +1,11 @@
 import isValidDate from "@/common/helper";
-import {InvoiceFullJoin, UserDTO, ZaloPaymentOrder} from "@/common/types";
+import {
+    ClientEvents,
+    InvoiceFullJoin,
+    ServerEvents,
+    UserDTO,
+    ZaloPaymentOrder,
+} from "@/common/types";
 import invoiceService from "@/services/invoice-service";
 import {invoiceStatus, paymentMethod} from "@prisma/client";
 import {Request, Response} from "express";
@@ -14,6 +20,7 @@ import userService from "@/services/user-service";
 import InvoiceNotFound from "@/errors/order/order-not-found";
 import axios from "axios";
 import paymentService from "@/services/payment-service";
+import {Server, Socket} from "socket.io";
 
 const getInvoice = async (req: Request, res: Response) => {
     const invoiceID = req.params.id as string;
@@ -21,17 +28,36 @@ const getInvoice = async (req: Request, res: Response) => {
     const invoice = await invoiceService.getInvoice(invoiceID);
 
     if (!invoice) {
-        console.debug(
-            `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-        );
         throw new InvoiceNotFound(invoiceID);
     }
 
-    console.debug(
-        `[invoice controller]: getInvoice with id ${invoiceID}: succeed `
-    );
     res.status(StatusCodes.OK).json({
         info: invoice,
+    });
+};
+
+const countInvoices = async (req: Request, res: Response) => {
+    const statusParam = req.query.status as string;
+    const dateParam = req.query.date as string;
+    const userID = req.query.userID as string;
+
+    let date;
+
+    if (isValidDate(dateParam)) {
+        date = new Date(dateParam);
+    }
+
+    const numberOfInvoices = await invoiceService.getNumberOfInvoices({
+        fromDoneDate: date,
+        toDoneDate: date,
+        userID: userID,
+        status: statusParam as invoiceStatus,
+    });
+
+    res.status(StatusCodes.OK).json({
+        info: {
+            numberOfInvoices: numberOfInvoices,
+        },
     });
 };
 
@@ -59,14 +85,14 @@ const getInvoices = async (req: Request, res: Response) => {
     });
 
     const totalInvoices = await invoiceService.getNumberOfInvoices({
-        from: date,
-        to: date,
+        fromCreatedDate: date,
+        toCreatedDate: date,
+        userID: userID,
         status: statusParam as invoiceStatus,
         invoiceID: invoiceID,
         userName: userName,
     });
 
-    console.debug(`[invoice controller]: getInvoices: succeed `);
     res.status(StatusCodes.OK).json({
         info: {
             invoices: invoices,
@@ -82,9 +108,6 @@ const updateInvoice = async (req: Request, res: Response) => {
     let invoice = await invoiceService.getInvoice(invoiceID);
 
     if (!invoice) {
-        console.debug(
-            "[invoice controller] updateInvoice : failed to find invoice"
-        );
         throw new InvoiceNotFound(ResponseMessage.INVOICE_NOT_FOUND);
     }
 
@@ -102,9 +125,6 @@ const updateInvoice = async (req: Request, res: Response) => {
         ) {
             const invoice = await invoiceService.getInvoice(invoiceID);
             if (!invoice) {
-                console.debug(
-                    `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-                );
                 throw new InvoiceNotFound(invoiceID);
             }
 
@@ -119,7 +139,6 @@ const updateInvoice = async (req: Request, res: Response) => {
         }
     }
 
-    console.debug(`[invoice controller]: getInvoices: succeed `);
     res.status(StatusCodes.OK).json({
         info: updatedInvoice,
     });
@@ -146,9 +165,6 @@ const createNewOrder = async (req: Request, res: Response) => {
     const payload = await invoiceService.getInvoice(invoice.invoiceID);
 
     if (!payload) {
-        console.debug(
-            "[invoice controller] createnewOrder : failed to get invoice after insert"
-        );
         throw new InvoiceNotFound(ResponseMessage.INVOICE_NOT_FOUND);
     }
 
@@ -163,9 +179,6 @@ const makePayment = async (req: Request, res: Response) => {
 
     const invoice = await invoiceService.getInvoice(invoiceID);
     if (!invoice) {
-        console.debug(
-            `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-        );
         throw new InvoiceNotFound(invoiceID);
     }
 
@@ -173,10 +186,21 @@ const makePayment = async (req: Request, res: Response) => {
     const productsInInvoice = invoiceService.getProductsOutOfInvoice(invoice);
     await productService.getValidProductsInOrder(productsInInvoice);
 
+    const total: number = invoice.invoiceProducts.reduce<number>(
+        (prev, curr) => {
+            prev =
+                prev +
+                curr.quantity * (1 - (curr.discount || 0) / 100) * curr.price;
+            return prev;
+        },
+        0
+    );
+
     // create zalo paymenturl
     const paymentOrder: ZaloPaymentOrder = paymentService.getZaloPayemtOrder(
         invoiceID,
-        invoice.userID
+        invoice.userID,
+        total
     );
 
     const zaloResponse = await axios.post(zaloPayConfig.endpoint, null, {
@@ -217,9 +241,6 @@ const acceptPayment = async (req: Request, res: Response) => {
 
             const invoice = await invoiceService.getInvoice(invoiceID);
             if (!invoice) {
-                console.debug(
-                    `[invoice controller]: getInvoice with id ${invoiceID}: not found `
-                );
                 throw new InvoiceNotFound(invoiceID);
             }
 
@@ -240,13 +261,6 @@ const acceptPayment = async (req: Request, res: Response) => {
             await productService.decearseItemsQuantity(itemDictionary);
         }
     } catch (error) {
-        console.debug(
-            `[payment controller]: acceptPayment : fail ${JSON.stringify(
-                error,
-                null,
-                2
-            )}`
-        );
         result.return_code = 0;
         if (error instanceof Error) {
             result.return_message = error.message;
@@ -257,6 +271,62 @@ const acceptPayment = async (req: Request, res: Response) => {
     return res.json(result);
 };
 
+const registerInvoiceSocketHandlers = (
+    io: Server<ClientEvents, ServerEvents>,
+    socket: Socket<ClientEvents, ServerEvents>
+) => {
+    const createInvoice = async () => {
+        try {
+            const numberOfNewInvoices =
+                await invoiceService.getNumberOfInvoices({
+                    status: invoiceStatus.NEW,
+                });
+
+            io.to(`admin:room`).emit("invoice:new", {
+                numberOfNewInvoices: numberOfNewInvoices,
+            });
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error(`[error handler] ${error.name} : ${error.stack}`);
+            } else {
+                console.error(`[error handler] unexpected error : ${error}`);
+            }
+        }
+    };
+
+    const updateInvoiceStatus = async (payload: {
+        userID: string;
+        newStatus: invoiceStatus;
+    }) => {
+        try {
+            let numberOfNewInvoices = await invoiceService.getNumberOfInvoices({
+                userID: payload.userID,
+                status: payload.newStatus,
+            });
+            io.to(`user:${payload.userID}`).emit(`invoice:update-status`, {
+                numberOfNewInvoices: numberOfNewInvoices,
+                newStatus: payload.newStatus,
+            });
+
+            numberOfNewInvoices = await invoiceService.getNumberOfInvoices({
+                status: invoiceStatus.NEW,
+            });
+            io.to(`admin:room`).emit("invoice:new", {
+                numberOfNewInvoices: numberOfNewInvoices,
+            });
+        } catch (error) {
+            if (error instanceof Error) {
+                console.error(`[error handler] ${error.name} : ${error.stack}`);
+            } else {
+                console.error(`[error handler] unexpected error : ${error}`);
+            }
+        }
+    };
+
+    socket.on(`invoice:new`, createInvoice);
+    socket.on(`invoice:update-status`, updateInvoiceStatus);
+};
+
 export default {
     getInvoices,
     createNewOrder,
@@ -264,4 +334,6 @@ export default {
     acceptPayment,
     updateInvoice,
     getInvoice,
+    countInvoices,
+    registerInvoiceSocketHandlers,
 };

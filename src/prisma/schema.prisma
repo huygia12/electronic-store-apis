@@ -138,22 +138,19 @@ model Review {
 model SlideShow {
   slideID String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   url     String
-  storeID String  @db.Uuid
   index   Int     @db.SmallInt
   ref     String?
-  Store   Store   @relation(fields: [storeID], references: [storeID], onDelete: NoAction, onUpdate: NoAction, map: "SlideShow_storeID_Store_storeID_fk")
 }
 
 model Store {
-  storeID     String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  storeName   String      @db.VarChar(255)
+  storeID     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  storeName   String  @db.VarChar(255)
   description String?
   address     String?
-  phoneNumber String?     @db.VarChar(10)
-  email       String?     @db.VarChar(255)
+  phoneNumber String? @db.VarChar(10)
+  email       String? @db.VarChar(255)
   leftBanner  String?
   rightBanner String?
-  slideShows  SlideShow[]
 }
 
 model User {
@@ -175,7 +172,7 @@ model User {
 
 model EmailRegistration {
   registrationID String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String
+  email          String   @unique(map: "unique_email")
   createdAt      DateTime @default(now()) @db.Timestamptz(6)
 }
 

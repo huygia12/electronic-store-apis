@@ -1,7 +1,7 @@
 import {ResponseMessage} from "@/common/constants";
 import prisma from "@/common/prisma-client";
 import {AttributeOptionRequest, AttributeTypeRequest} from "@/common/schemas";
-import {Attribute, Nullable} from "@/common/types";
+import {Attribute} from "@/common/types";
 import AttributeOptionAlreadyExistError from "@/errors/attribute/option-already-exist";
 import AttributeOptionNotFound from "@/errors/attribute/option-not-found";
 import AttributeTypeAlreadyExistError from "@/errors/attribute/type-already-exist";
@@ -10,19 +10,18 @@ import type {AttributeOption, AttributeType} from "@prisma/client";
 
 const getAttributeTypeByID = async (
     typeID: string
-): Promise<Nullable<AttributeType>> => {
-    const attributeType: Nullable<AttributeType> =
-        await prisma.attributeType.findUnique({
-            where: {
-                typeID: typeID,
-            },
-        });
+): Promise<AttributeType | null> => {
+    const attributeType = await prisma.attributeType.findUnique({
+        where: {
+            typeID: typeID,
+        },
+    });
 
     return attributeType;
 };
 
 const getAttributeByID = async (typeID: string): Promise<Attribute> => {
-    const attribute: Attribute | null = await prisma.attributeType.findFirst({
+    const attribute = await prisma.attributeType.findFirst({
         where: {
             typeID: typeID,
         },
@@ -32,9 +31,6 @@ const getAttributeByID = async (typeID: string): Promise<Attribute> => {
     });
 
     if (!attribute) {
-        console.debug(
-            `[attribute service]: Attribute type: ${typeID} not found`
-        );
         throw new AttributeTypeNotFound(ResponseMessage.ATTR_TYPE_NOT_FOUND);
     }
 
@@ -43,26 +39,24 @@ const getAttributeByID = async (typeID: string): Promise<Attribute> => {
 
 const getAttributeOptionByID = async (
     optionID: string
-): Promise<Nullable<AttributeOption>> => {
-    const attributeOption: Nullable<AttributeOption> =
-        await prisma.attributeOption.findUnique({
-            where: {
-                optionID: optionID,
-            },
-        });
+): Promise<AttributeOption | null> => {
+    const attributeOption = await prisma.attributeOption.findUnique({
+        where: {
+            optionID: optionID,
+        },
+    });
 
     return attributeOption;
 };
 
 const getAttributeTypeByValue = async (
     typeValue: string
-): Promise<Nullable<AttributeType>> => {
-    const attributeType: Nullable<AttributeType> =
-        await prisma.attributeType.findFirst({
-            where: {
-                typeValue: typeValue,
-            },
-        });
+): Promise<AttributeType | null> => {
+    const attributeType = await prisma.attributeType.findFirst({
+        where: {
+            typeValue: typeValue,
+        },
+    });
 
     return attributeType;
 };
@@ -70,14 +64,13 @@ const getAttributeTypeByValue = async (
 const getAttributeOptionByValue = async (
     optionValue: string,
     typeID: string
-): Promise<Nullable<AttributeOption>> => {
-    const attributeOption: Nullable<AttributeOption> =
-        await prisma.attributeOption.findFirst({
-            where: {
-                optionValue: optionValue,
-                typeID: typeID,
-            },
-        });
+): Promise<AttributeOption | null> => {
+    const attributeOption = await prisma.attributeOption.findFirst({
+        where: {
+            optionValue: optionValue,
+            typeID: typeID,
+        },
+    });
 
     return attributeOption;
 };
@@ -85,13 +78,11 @@ const getAttributeOptionByValue = async (
 const insertAttributeType = async (
     validPayload: AttributeTypeRequest
 ): Promise<string> => {
-    const attributeTypeHolder: Nullable<AttributeType> =
-        await getAttributeTypeByValue(validPayload.typeValue);
+    const attributeTypeHolder = await getAttributeTypeByValue(
+        validPayload.typeValue
+    );
 
     if (attributeTypeHolder) {
-        console.debug(
-            `[attribute service]: Attribute type: ${validPayload.typeValue} already exist`
-        );
         throw new AttributeTypeAlreadyExistError(
             ResponseMessage.ATTR_TYPE_ALREADY_EXISTS
         );
@@ -113,12 +104,10 @@ const updateAttributeType = async (
     typeID: string,
     validPayload: AttributeTypeRequest
 ) => {
-    let attributeTypeHolder: Nullable<AttributeType> =
-        await getAttributeTypeByValue(validPayload.typeValue);
+    let attributeTypeHolder = await getAttributeTypeByValue(
+        validPayload.typeValue
+    );
     if (attributeTypeHolder) {
-        console.debug(
-            `[attribute service]: Attribute type: ${validPayload.typeValue} already exist`
-        );
         throw new AttributeTypeAlreadyExistError(
             ResponseMessage.ATTR_TYPE_ALREADY_EXISTS
         );
@@ -126,9 +115,6 @@ const updateAttributeType = async (
 
     attributeTypeHolder = await getAttributeTypeByID(typeID);
     if (!attributeTypeHolder) {
-        console.debug(
-            `[attribute service]: Attribute type: ${typeID} cannot be found`
-        );
         throw new AttributeTypeNotFound(ResponseMessage.ATTR_TYPE_NOT_FOUND);
     }
 
@@ -143,13 +129,9 @@ const updateAttributeType = async (
 };
 
 const deleteAttributeType = async (typeID: string) => {
-    const attributeTypeHolder: Nullable<AttributeType> =
-        await getAttributeTypeByID(typeID);
+    const attributeTypeHolder = await getAttributeTypeByID(typeID);
 
     if (!attributeTypeHolder) {
-        console.debug(
-            `[attribute service]: Attribute type: ${typeID} cannot be found`
-        );
         throw new AttributeTypeNotFound(ResponseMessage.ATTR_TYPE_NOT_FOUND);
     }
 
@@ -172,23 +154,18 @@ const insertAttributeOption = async (
     typeID: string,
     validPayload: AttributeOptionRequest
 ): Promise<AttributeOption> => {
-    const attributeTypeHolder: Nullable<AttributeType> =
-        await getAttributeTypeByID(typeID);
+    const attributeTypeHolder = await getAttributeTypeByID(typeID);
 
     if (!attributeTypeHolder) {
-        console.debug(
-            `[attribute service]: Attribute option: ${typeID} cannot be found`
-        );
         throw new AttributeTypeNotFound(ResponseMessage.ATTR_TYPE_NOT_FOUND);
     }
 
-    const attributeOptionHolder: Nullable<AttributeOption> =
-        await getAttributeOptionByValue(validPayload.optionValue, typeID);
+    const attributeOptionHolder = await getAttributeOptionByValue(
+        validPayload.optionValue,
+        typeID
+    );
 
     if (attributeOptionHolder) {
-        console.debug(
-            `[attribute service]: Attribute option: ${validPayload.optionValue} already exists`
-        );
         throw new AttributeOptionAlreadyExistError(
             ResponseMessage.ATTR_OPTION_ALREADY_EXISTS
         );
@@ -209,13 +186,9 @@ const updateAttributeOption = async (
     typeID: string,
     validPayload: AttributeOptionRequest
 ): Promise<AttributeOption> => {
-    let attributeOptionHolder: Nullable<AttributeOption> =
-        await getAttributeOptionByID(optionID);
+    let attributeOptionHolder = await getAttributeOptionByID(optionID);
 
     if (!attributeOptionHolder) {
-        console.debug(
-            `[attribute service]: Attribute option: ${optionID} not found`
-        );
         throw new AttributeOptionNotFound(
             ResponseMessage.ATTR_OPTION_NOT_FOUND
         );
@@ -226,9 +199,6 @@ const updateAttributeOption = async (
         typeID
     );
     if (attributeOptionHolder) {
-        console.debug(
-            `[attribute service]: Attribute option: ${validPayload.optionValue} already exists`
-        );
         throw new AttributeOptionAlreadyExistError(
             ResponseMessage.ATTR_OPTION_ALREADY_EXISTS
         );
@@ -246,19 +216,7 @@ const updateAttributeOption = async (
     return attributeOption;
 };
 
-const deleteAttributeOption = async (optionID: string, typeID: string) => {
-    const attributeOptionHolder: Nullable<AttributeOption> =
-        await getAttributeOptionByID(optionID);
-
-    if (!attributeOptionHolder || attributeOptionHolder.typeID !== typeID) {
-        console.debug(
-            `[attribute service]: Attribute option: ${optionID} not found`
-        );
-        throw new AttributeOptionNotFound(
-            ResponseMessage.ATTR_OPTION_NOT_FOUND
-        );
-    }
-
+const deleteAttributeOption = async (optionID: string) => {
     //Must delete all the link between attribute option and product
     const deleteProductAttribute = prisma.productAttribute.deleteMany({
         where: {
@@ -336,5 +294,6 @@ export default {
     insertAttributeOption,
     deleteAttributeOption,
     updateAttributeOption,
-    getProductAttributesAfterFilter,
+    getProductAttributesBelongToProviderAndCategory:
+        getProductAttributesAfterFilter,
 };

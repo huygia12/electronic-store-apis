@@ -7,16 +7,12 @@ import {
 } from "@/common/schemas";
 import {
     ItemDictionary,
-    Nullable,
     ProductFullJoin,
     ProductJoinWithItems,
     ProductStatus,
     ProductSummary,
 } from "@/common/types";
 import ProductNotFoundError from "@/errors/product/product-not-found";
-import providerService from "./provider-service";
-import categoryService from "./category-service";
-import attributeService from "./attribute-service";
 import ProductInOrderNotEnoughQuantity from "@/errors/order/product-in-order-not-enough-quantity";
 import {Prisma} from "@prisma/client";
 
@@ -40,12 +36,6 @@ const getItemImageInsertion = (
 };
 
 const createProduct = async (validPayload: ProductRequest) => {
-    // check if providerID, categoryID exist or not
-    await providerService.getProviderByID(validPayload.providerID);
-    await categoryService.getCategoryByID(validPayload.categoryID);
-    // check if optionIDs exist or not
-    validPayload.options &&
-        (await attributeService.checkAttributeOptions(validPayload.options));
     await prisma.$transaction(async (prisma) => {
         // await db.transaction(async trx => {
         //Insert into Product and then retrieve the id
@@ -67,8 +57,6 @@ const createProduct = async (validPayload: ProductRequest) => {
                 },
             })
         ).productID;
-
-        console.debug(`[create product]: productID: ${productID}`);
 
         //Insert into ProductItemTable and then retieve the ids
         await prisma.productItem.createMany({
@@ -92,8 +80,6 @@ const createProduct = async (validPayload: ProductRequest) => {
             })
         ).map((item) => item.itemID);
 
-        console.debug(`[create product]: product ItemIDs: ${productItemIDs}`);
-
         //Insert into ProductImageTable
         await prisma.itemImage.createMany({
             data: getItemImageInsertion(
@@ -112,22 +98,13 @@ const createProduct = async (validPayload: ProductRequest) => {
             });
         }
     });
-
-    // })
 };
 
 const updateProduct = async (
     validPayload: ProductRequest,
     productID: string
 ) => {
-    // check if providerID, categoryID exist or not
-    await providerService.getProviderByID(validPayload.providerID);
-    await categoryService.getCategoryByID(validPayload.categoryID);
-    // check if optionIDs exist or not
-    validPayload.options &&
-        (await attributeService.checkAttributeOptions(validPayload.options));
     // check if productID exists or not
-    await getProductFullJoinWithID(productID);
     await prisma.$transaction(async (prisma) => {
         //Update ProductTable
         await prisma.product.update({
@@ -211,7 +188,6 @@ const updateProduct = async (
 };
 
 const deleteProduct = async (productID: string) => {
-    await getProductFullJoinWithID(productID);
     await prisma.$transaction(async (prisma) => {
         //Delete ProductImageTable
         let productItemIDs: string[] = await prisma.productItem
@@ -296,9 +272,6 @@ const getValidProductsInOrder = async (
         return itemDictionary;
     } catch {
         // Get in here if there is a product in order but not exist in database
-        console.debug(
-            `[product-service] checkIfProductsInOrder: product not found in dictionary`
-        );
         throw new ProductNotFoundError(ResponseMessage.PRODUCT_NOT_FOUND);
     }
 };
@@ -340,7 +313,7 @@ const getProductsSummary = async (params: {
 const getProductFullJoinWithID = async (
     productID: string
 ): Promise<ProductFullJoin> => {
-    const product: Nullable<ProductFullJoin> = await prisma.product.findFirst({
+    const product = await prisma.product.findFirst({
         where: {
             productID: productID,
         },
@@ -365,9 +338,6 @@ const getProductFullJoinWithID = async (
     });
 
     if (!product) {
-        console.debug(
-            `[product service]: product with id ${productID} not found`
-        );
         throw new ProductNotFoundError(ResponseMessage.PRODUCT_NOT_FOUND);
     }
 
@@ -388,10 +358,11 @@ const getProductFullJoinList = async (params: {
     currentPage: number;
 }): Promise<ProductFullJoin[]> => {
     let query = `
-SELECT ft."productID", ft."itemID", ft."maxPrice"
+SELECT ft."productID", ft."itemID", ft."maxPrice", ft."productName"
 FROM (
       SELECT 
         gr."productID", 
+        gr."productName", 
         gr."itemID", 
         MAX(gr."afterDiscountPrice") as "maxPrice",
         ROW_NUMBER() OVER (PARTITION BY gr."productID" ORDER BY gr."itemID") AS rn
@@ -399,6 +370,7 @@ FROM (
         (
           SELECT 
             p."productID", 
+            p."productName", 
             pi."itemID",
             pi."price" * (100 - COALESCE(pi."discount", 0))/100 AS "afterDiscountPrice"
           FROM "Product" p
@@ -413,7 +385,7 @@ FROM (
         LEFT JOIN "ProductAttribute" pa ON gr."productID" = pa."productID"
         WHERE
             gr."afterDiscountPrice" BETWEEN ${params.minPrice} AND ${params.maxPrice}
-        GROUP BY gr."productID", gr."itemID"
+        GROUP BY gr."productID", gr."itemID", gr."productName"
             ${
                 params.optionIDs
                     ? `HAVING ARRAY_AGG(pa."optionID") @> ARRAY[${params.optionIDs.map((id) => `'${id}'::uuid`).join(", ")}]`
@@ -428,7 +400,7 @@ WHERE rn = 1
         orderByClauses.push(`"maxPrice" ${params.sortByPrice}`);
     }
     if (params.sortByName) {
-        orderByClauses.push(`p."productName" ${params.sortByName}`);
+        orderByClauses.push(`"productName" ${params.sortByName}`);
     }
     if (orderByClauses.length) {
         query += ` ORDER BY ${orderByClauses.join(", ")}`;
@@ -438,7 +410,6 @@ WHERE rn = 1
 
     query += ` LIMIT ${limit} OFFSET ${offset}`;
 
-    console.log(query);
     //Get productID and itemID satisfying the conditions
     const queryRows: {productID: string; itemID: string}[] =
         await prisma.$queryRaw`${Prisma.raw(query)}`;

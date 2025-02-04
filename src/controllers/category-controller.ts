@@ -12,9 +12,6 @@ const createCategory = async (req: Request, res: Response) => {
 
     category = await categoryService.getCategoryByID(category.categoryID);
 
-    console.debug(
-        `[category controller]: Insert category: ${newCategory.categoryName} successfull`
-    );
     res.status(StatusCodes.CREATED).json({
         message: ResponseMessage.SUCCESS,
         info: category,
@@ -32,9 +29,6 @@ const updateCategory = async (req: Request, res: Response) => {
 
     category = await categoryService.getCategoryByID(category.categoryID);
 
-    console.debug(
-        `[category controller]: Update category to ${categoryReq.categoryName} successfull`
-    );
     res.status(StatusCodes.OK).json({
         message: "Update category success",
         info: category,
@@ -45,7 +39,6 @@ const deleteCategory = async (req: Request, res: Response) => {
     const categoryID = req.params.id as string;
 
     await categoryService.deleteCategory(categoryID);
-    console.debug(`[category controller]: Delete category successfull`);
     res.status(StatusCodes.OK).json({
         message: "Delete category successfull",
     });
@@ -55,7 +48,6 @@ const getCategories = async (req: Request, res: Response) => {
     const categorys: CategoryWithProductTotal[] =
         await categoryService.getCategories();
 
-    console.debug(`[category controller]: Get categorys successfull`);
     return res.status(StatusCodes.OK).json({
         message: ResponseMessage.SUCCESS,
         info: categorys,
