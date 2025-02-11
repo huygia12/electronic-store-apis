@@ -370,10 +370,29 @@ const getUserResponseDTOs = async (params: {
                 gte: startOfDay,
                 lte: endOfDay,
             },
-            userName: {
-                contains: params.searching,
-                mode: "insensitive",
-            },
+            OR:
+                params.searching && params.searching.trim() !== ""
+                    ? [
+                          {
+                              userName: {
+                                  contains: params.searching,
+                                  mode: "insensitive",
+                              },
+                          },
+                          {
+                              email: {
+                                  contains: params.searching,
+                                  mode: "insensitive",
+                              },
+                          },
+                          {
+                              phoneNumber: {
+                                  contains: params.searching,
+                                  mode: "insensitive",
+                              },
+                          },
+                      ]
+                    : undefined,
         },
         select: {
             userID: true,

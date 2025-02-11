@@ -11,7 +11,7 @@ type Config = {
     GMAIL_PASSWORD: string;
 };
 
-const localhost = "http://127.0.0.1";
+const localhost = "http://localhost";
 const envConfig = dotenv.config({
     path: resolve(".env") as string,
 });

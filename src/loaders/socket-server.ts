@@ -54,7 +54,7 @@ class SocketServer {
             });
         });
 
-        console.log("[socket server]: Server is listening");
+        console.info("[socket server]: Server is listening");
     }
 
     public getIO() {
@@ -65,7 +65,7 @@ class SocketServer {
         this._io.close((error) => {
             if (error) throw error;
 
-            console.log("[socket server]: Stopped");
+            console.info("[socket server]: Stopped");
         });
     }
 }

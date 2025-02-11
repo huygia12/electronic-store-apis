@@ -274,7 +274,9 @@ const registerUserSocketHandlers = (
                 isBanned: payload.banned,
             });
 
-            io.to(`user:${payload.userID}`).emit("user:ban");
+            if (payload.banned) {
+                io.to(`user:${payload.userID}`).emit("user:ban");
+            }
             callback(undefined);
         } catch (error) {
             if (error instanceof Error) {
